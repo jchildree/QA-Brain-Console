@@ -1,0 +1,40 @@
+{
+	"nodes":[
+		{"id":"group0000000002","type":"group","x":0,"y":-120,"width":2114,"height":477,"color":"4","label":"QA Brain — Live Dashboards (personal drafting layer)"},
+		{"id":"file0000000captr","type":"file","file":"docs/qa-brain/_dashboards/CAP-Tracker.md","x":40,"y":-52,"width":448,"height":386},
+		{"id":"file00000000home","type":"file","file":"docs/qa-brain/_dashboards/Home.md","x":560,"y":-720,"width":720,"height":512},
+		{"id":"title0000000001","type":"text","text":"# EQMS Project Board\nLive QA Brain dashboards (top, green) vs. EQMS build status (bottom, purple) — separate systems by design, see ADR-013. Arrows show reference/traceability, not data sync.","x":-64,"y":-1000,"width":2114,"height":140},
+		{"id":"file0000000sopct","type":"file","file":"docs/qa-brain/_dashboards/SOP-Control.md","x":508,"y":-52,"width":505,"height":386},
+		{"id":"file000qabrainbnd","type":"file","file":"docs/Obsidian Vault/eqms/QA Brain.md","x":1840,"y":-640,"width":760,"height":432},
+		{"id":"7e37a58c6984fe16","type":"file","file":"Excalidraw/Running DEV Instance (npm run dev).md","x":88,"y":-640,"width":400,"height":310,"color":"4"},
+		{"id":"29b3b3e6ef9b3237","type":"file","file":"Excalidraw/Drawing 2026-07-01 11.54.26.excalidraw.md","x":-800,"y":-665,"width":407,"height":290,"color":"4"},
+		{"id":"38d49e2785bfc97c","type":"file","file":"Excalidraw/My App.md","x":-780,"y":-20,"width":400,"height":400},
+		{"id":"file0000auditprep","type":"file","file":"docs/qa-brain/_dashboards/Audit-Prep.md","x":1047,"y":-52,"width":473,"height":386},
+		{"id":"file0000phasestat","type":"file","file":"docs/Obsidian Vault/eqms/Phase Status.md","x":760,"y":440,"width":680,"height":600},
+		{"id":"file0000p0criteria","type":"file","file":"docs/phase-status/P0-CRITERIA.md","x":-527,"y":440,"width":791,"height":600},
+		{"id":"file000incidenttr","type":"file","file":"docs/qa-brain/_dashboards/Incident-Trends.md","x":1560,"y":-52,"width":490,"height":386},
+		{"id":"file000p01subphase","type":"file","file":"docs/phase-status/P01-SUBPHASES.md","x":1914,"y":440,"width":726,"height":600},
+		{"id":"6d3683c8a7b52ed3","type":"file","file":"Excalidraw/VS Code View Only.md","x":-360,"y":-720,"width":400,"height":400}
+	],
+	"edges":[
+		{"id":"edge0000000002","toFloating":false,"fromFloating":false,"fromNode":"file000qabrainbnd","fromSide":"right","toNode":"group0000000002","toSide":"right","label":"ADR-013: hard boundary, no programmatic sync"},
+		{"id":"edge0000000003","fromFloating":false,"toFloating":false,"fromNode":"file0000phasestat","fromSide":"left","toNode":"file0000p0criteria","toSide":"right","label":"62 exit criteria (0/62 verified)"},
+		{"id":"edge0000000004","fromFloating":false,"toFloating":false,"fromNode":"file0000phasestat","fromSide":"right","toNode":"file000p01subphase","toSide":"left","label":"18 sub-phases, full registry"},
+		{
+			"id":"edge0000000001",
+			"fromFloating":false,
+			"toFloating":false,
+			"styleAttributes":{"path":"short-dashed"},
+			"fromNode":"file000qabrainbnd",
+			"fromSide":"left",
+			"toNode":"file00000000home",
+			"toSide":"right",
+			"label":"Vertical Dashboard of All QA Brain"
+		}
+	],
+	"metadata":{
+		"version":"1.0-1.0",
+		"frontmatter":{},
+		"startNode":"4f0caff4f9e72bf7"
+	}
+}

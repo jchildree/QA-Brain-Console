@@ -1,0 +1,9 @@
+# CHANGE
+
+Record type. Change request. ID pattern `CHG-{YYYYMMDD}-001`. Only record type with a formal multi-role approval table (Requestor/QA/Department Head) and explicit IQ/OQ/PQ validation-requirement checkboxes.
+
+## Related
+
+- [[QA-Brain - CHANGE]]
+- [[Document ID Convention]]
+- [[IQ OQ PQ Validation Alignment]]

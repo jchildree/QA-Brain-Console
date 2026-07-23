@@ -1,0 +1,11 @@
+# SOP
+
+Record type. Standard Operating Procedure -- controlled lab procedure. ID pattern `SOP-{YYYYMMDD}-001`. Only record type whose template auto-sets a review cadence (+365 days).
+
+Relationship: upstream of INCIDENT (deviations reference the SOP that was breached).
+
+## Related
+
+- [[QA-Brain - SOP]]
+- [[Document ID Convention]]
+- [[Record Relationship Model]]

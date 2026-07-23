@@ -1,0 +1,11 @@
+# CAP
+
+Record type. Corrective + Preventive Action plan. ID pattern `CAP-{YYYYMMDD}-001`. Only record type carrying `root_cause` and `effectiveness_status` frontmatter -- these are what dashboards group/trend on.
+
+Relationship: downstream of INCIDENT, references root cause; can link back to SOP as a supporting/corrected document.
+
+## Related
+
+- [[QA-Brain - CAP]]
+- [[Document ID Convention]]
+- [[Record Relationship Model]]

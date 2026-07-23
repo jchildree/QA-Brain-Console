@@ -1,0 +1,45 @@
+# ADR-002: Console Rebuild Direction
+
+**Project:** QA-Brain-Project
+Status: ACCEPTED
+Date: 2026-07-15
+Authors: Joseph Childree
+Affected Layers: Frontend (new app) · Backend (Claude proxy) · Data (qa-brain vault frontmatter)
+Supersedes: ADR-001 (Dashboard Rebuild Direction)
+
+---
+
+## Context
+
+ADR-001 locked a "dashboard app" direction: new `app/` directory, frontmatter-as-source-of-truth, SOP-only vertical slice (form + status dashboard + Claude intake + extract-and-attach). On review, "dashboard" mis-stated the actual intent -- the app needs to be a full console, with a dashboard as one screen inside it, not the whole product. ADR-001's technical decisions (frontmatter authority, backend proxy, SOP-first slice, extract-and-attach) still hold; only the shape of the app changes.
+
+## Decision
+
+Build a console: a persistent app shell with navigation across all 6 record types plus a cross-type overview, not a single dashboard screen. Content stays SOP-only for this build pass; the shell and nav are sized for the full console now so later slices don't require nav rework.
+
+| Aspect | Details |
+|--------|---------|
+| **Shell** | Persistent nav (sidebar or equivalent) wrapping multiple independently-navigable screens. Dashboard becomes one screen among several, not the app's top level. |
+| **Nav scope** | All 6 record types (SOP, CAP, INCIDENT, CHANGE, AUDIT, TRAINING) appear in nav now. Only SOP screens are functional; the other 5 render as "coming soon" stubs. |
+| **Home** | Console opens to a cross-type overview screen (open CAPs, upcoming SOP reviews, recent incidents, pulled from whatever data exists yet) before drilling into a record type -- mirrors the vault's existing `Home.md` role, not the SOP dashboard directly. |
+| **Utility screens** | Settings, evidence library, and cross-record search get stub nav entries now too, same treatment as the 5 non-SOP record types. |
+| **Everything from ADR-001** | Unchanged: `app/` at repo root, direct read/write to `qa-brain/*.md` frontmatter as sole source of truth, backend-proxied Claude API calls, SOP-first vertical slice for actual content, extract-and-attach file handling. |
+
+## Consequences
+
+| Positive | Negative |
+|----------|----------|
+| Nav shell built once for the full 6-type + utility scope -- no rework when CAP/INCIDENT/etc. slices land later | More UI surface to build up front (stub screens, overview home) before any of it has real content behind it |
+| Overview home gives a reason to open the console before a specific record type needs attention, closer to how `qa-brain/_dashboards/Home.md` is used today | Stub screens for 5 record types + 3 utility screens carry no functionality yet -- risk of looking unfinished if the SOP slice stalls |
+| ADR-001's frontmatter-authority and backend-proxy decisions carry forward unchanged -- no rework there | None beyond the above |
+
+## Implementation Notes
+
+- Same `app/` location and frontmatter-authority model as ADR-001 -- this ADR changes shape, not the data/backend approach.
+- Nav entries at launch: Overview (home), SOP (functional), CAP / INCIDENT / CHANGE / AUDIT / TRAINING (stubs), Settings / Evidence Library / Search (stubs).
+- SOP vertical slice content is unchanged from ADR-001: schema-as-data form, status dashboard replacing `qa-brain/_dashboards/SOP-Control.md`, Claude-assisted intake, extract-and-attach uploads.
+- Not yet decided (carried over from ADR-001, still out of scope): backend framework/hosting for the Claude proxy, exact file-watching/write strategy against `qa-brain/SOP/*.md`, whether/how old Dataview `Home.md` links to the new console during transition.
+
+## Related ADRs
+
+- Supersedes [[ADR-001-dashboard-rebuild-direction]] -- original framing kept as history; decision record below documents what changed and why.

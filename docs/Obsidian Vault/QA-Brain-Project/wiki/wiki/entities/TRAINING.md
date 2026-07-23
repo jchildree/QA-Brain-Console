@@ -1,0 +1,9 @@
+# TRAINING
+
+Record type. Employee training record. ID pattern `TRN-{YYYYMMDD}-001`. Links to the SOP being trained on. Feeds root-cause analysis alongside AUDIT (per CLAUDE.md relationship model).
+
+## Related
+
+- [[QA-Brain - TRAINING]]
+- [[Document ID Convention]]
+- [[Record Relationship Model]]

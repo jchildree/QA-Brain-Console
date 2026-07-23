@@ -1,0 +1,65 @@
+{
+    "hooks":  {
+                  "SessionStart":  [
+                                       {
+                                           "hooks":  [
+                                                         {
+                                                             "type":  "command",
+                                                             "command":  "node \"C:\\Users\\jchildree\\OneDrive - TheIndustrialLaboratoriesCompany\\Desktop\\Projects\\QA-Brain-Project\\.claude\\hooks\\captain-caveman.js\"",
+                                                             "timeout":  5000
+                                                         }
+                                                     ]
+                                       },
+                                       {
+                                           "hooks":  [
+                                                         {
+                                                             "type":  "command",
+                                                             "command":  "node \"C:\\Users\\jchildree\\OneDrive - TheIndustrialLaboratoriesCompany\\Desktop\\Projects\\QA-Brain-Project\\.claude\\hooks\\caveman-activate.js\"",
+                                                             "timeout":  5000
+                                                         }
+                                                     ]
+                                       },
+                                       {
+                                           "hooks":  [
+                                                         {
+                                                             "type":  "command",
+                                                             "command":  "node \"C:\\Users\\jchildree\\OneDrive - TheIndustrialLaboratoriesCompany\\Desktop\\Projects\\QA-Brain-Project\\.claude\\hooks\\skill-metadata-loader.js\"",
+                                                             "timeout":  5000
+                                                         }
+                                                     ]
+                                       },
+                                       {
+                                           "hooks":  [
+                                                         {
+                                                             "type":  "command",
+                                                             "command":  "node \"C:\\Users\\jchildree\\OneDrive - TheIndustrialLaboratoriesCompany\\Desktop\\Projects\\QA-Brain-Project\\.claude\\hooks\\wiki-memory-inject.js\"",
+                                                             "timeout":  5000
+                                                         }
+                                                     ]
+                                       }
+                                   ],
+                  "UserPromptSubmit":  [
+                                           {
+                                               "hooks":  [
+                                                             {
+                                                                 "type":  "command",
+                                                                 "command":  "node \"C:\\Users\\jchildree\\OneDrive - TheIndustrialLaboratoriesCompany\\Desktop\\Projects\\QA-Brain-Project\\.claude\\hooks\\caveman-mode-tracker.js\"",
+                                                                 "timeout":  5000
+                                                             }
+                                                         ]
+                                           }
+                                       ],
+                  "PostToolUse":  [
+                                      {
+                                          "matcher":  "Write|Edit",
+                                          "hooks":  [
+                                                        {
+                                                            "type":  "command",
+                                                            "command":  "node \"C:\\Users\\jchildree\\OneDrive - TheIndustrialLaboratoriesCompany\\Desktop\\Projects\\QA-Brain-Project\\.claude\\hooks\\check-encoding.js\"",
+                                                            "timeout":  5000
+                                                        }
+                                                    ]
+                                      }
+                                  ]
+              }
+}

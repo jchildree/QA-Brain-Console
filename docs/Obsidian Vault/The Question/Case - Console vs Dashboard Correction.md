@@ -1,0 +1,34 @@
+---
+id: spiffe://qa-brain-project/console-vs-dashboard-correction/subject/case
+asserted: "App direction was mis-stated as 'dashboard'; actual intent is a full console with dashboard as one screen"
+source: user
+method: observed
+confidence: corroborated
+verify: "compare docs/Obsidian Vault/QA-Brain-Project/ADR-002-console-rebuild-direction.md decision table against user's stated correction"
+---
+
+# Case: Console vs Dashboard Correction
+
+**Status:** Closed
+
+## Symptom
+
+User flagged a mis-statement in the original app-direction ask: said "dashboard," meant "full console, with dashboards as one piece." ADR-001 (ACCEPTED, same day) had already locked the "dashboard app" framing throughout -- Decision, Consequences, and Implementation Notes sections all describe a single dashboard screen, not a shell.
+
+## Timeline
+
+1. 2026-07-15 -- ADR-001 accepted: "Dashboard Rebuild Direction." SOP-only vertical slice, dashboard framed as the app's top level.
+2. 2026-07-15 -- User corrects: real intent is a console; dashboard is one screen inside it.
+3. Interrogated via `/the-question:interrogate-spec`, one branch at a time:
+   - Shape: new app shell, multiple screens, dashboard is one of them -- not vague, no follow-up needed (already specific).
+   - Slice vs shell: nav shows all 6 record types now; only SOP functional, rest stubbed.
+   - Home: console opens to cross-type overview, not straight into SOP dashboard.
+   - ADR update path: ADR-002 supersedes ADR-001 rather than amending in place, per this vault's audit-trail convention.
+   - Utility screens: settings / evidence library / cross-record search stubbed in now too, same treatment as the 5 non-SOP record types.
+4. ADR-001 marked DEPRECATED (superseded by ADR-002); ADR-002 written and ACCEPTED; INDEX.md updated.
+
+## Resolution
+
+[[ADR-002-console-rebuild-direction]] is the corrected spec. [[ADR-001-dashboard-rebuild-direction]] kept as history, not deleted, per this vault's "audit trail = version control" convention.
+
+No open suspects -- this was a direct user correction, not a bug investigation. No Sources beyond the ADRs themselves.

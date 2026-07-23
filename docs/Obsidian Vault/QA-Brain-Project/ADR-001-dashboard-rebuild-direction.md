@@ -1,0 +1,48 @@
+# ADR-001: Dashboard Rebuild Direction
+
+**Project:** QA-Brain-Project
+Status: DEPRECATED (superseded by ADR-002 -- "dashboard" framing corrected to "console")
+Date: 2026-07-15
+Authors: Joseph Childree
+Affected Layers: Frontend (new app) · Backend (Claude proxy) · Data (qa-brain vault frontmatter)
+
+---
+
+## Context
+
+The QA-Brain vault's current dashboards (`qa-brain/_dashboards/`) are flat Obsidian Dataview query tables -- functional but basic (see `docs/Obsidian Vault/QA-Brain-Project/wiki/wiki/sources/QA-Brain - Dashboards.md`). Three standalone React/TSX prototypes existed at the repo root (`eqms_cognitive_compiler_dashboard.tsx`, `eqms_engine_registry_sandbox.tsx`, `gemini_multimodal_workspace_compiler.tsx`) -- Claude-generated demo artifacts, not wired into any build system, each built for an unrelated or partially-unrelated purpose (a narrative-to-record compiler, a lab EQMS console demo, and a Google-Workspace multimodal ingestion product pitch respectively).
+
+These 3 files were ingested into the project wiki (`docs/Obsidian Vault/QA-Brain-Project/wiki/`) via three parallel sub-agent reviews, each scoring the file's features against QA-Brain's actual needs (see `docs/Obsidian Vault/QA-Brain-Project/wiki/wiki/concepts/Dashboard Feature Gap Map.md`). All three reviews independently flagged the same gap: none of the 3 files replicate the current Dataview dashboard queries, none show a real read/write-to-vault-Markdown strategy (all use in-memory mock data), and none use a charting library despite implying trend/chart functionality in their UI copy.
+
+A decision was needed on whether and how to build a real dashboard replacement, and which of the 3 prototypes (if any) to build from.
+
+## Decision
+
+Build a new dashboard app, salvaging patterns (not literal domain content) from all 3 prototypes, adapted heavily where needed rather than requiring a clean domain match.
+
+| Aspect | Details |
+|--------|---------|
+| **Approach** | New top-level `app/` directory, sibling to `qa-brain/` (the vault) and `docs/` (the wiki). Reads/writes the real `qa-brain/*.md` frontmatter directly -- frontmatter stays the single source of truth, no separate database or sync layer. Claude API calls run through a backend proxy that holds the API key server-side; the browser never sees it. First build pass is a vertical slice on the **SOP** record type only (form + status dashboard + Claude-assisted intake) before scaling to CAP/INCIDENT/CHANGE/AUDIT/TRAINING. Uploaded files (photos, PowerPoint, other evidence) are handled as extract-and-attach: Claude extracts relevant text/findings to help draft the record, and the source file stays attached as evidence. |
+| **Rationale** | `eqms_engine_registry_sandbox.tsx` is structurally the closest of the 3 to a real dashboard (5-tab console, status-lifecycle cards) and its schema-as-data blueprint pattern echoes the vault's own per-type Templater schema -- reused as the form-builder foundation. `gemini_multimodal_workspace_compiler.tsx`'s asset-toggle intake UI (built for Photos/Video/Keep) generalizes to QA-Brain's real need to ingest photos/PowerPoint/other evidence files, once repointed at QA documents and Claude instead of Google services/Gemini. `eqms_cognitive_compiler_dashboard.tsx`'s free-text-to-structured-record extraction pattern is the closest fit to the actual daily friction point (manually filling Templater frontmatter). SOP was chosen as the first vertical slice because it has the simplest schema of the 6 record types and is the only one with an auto review-cadence -- lowest risk to validate the direction before committing to the other 5. |
+| **Trade-offs** | Gain: a dashboard that can actually be richer than flat Dataview tables (dynamic forms, Claude-assisted drafting, evidence attachment, real relationship visualization) while keeping the vault's Markdown files as the source of truth. Lose: none of the 3 source prototypes solve persistence or charting out of the box, so both the vault read/write layer and any trend/chart components have to be built from scratch rather than reused; the vertical-slice scope means 5 of 6 record types stay on the old Dataview dashboards until the SOP slice is validated and extended. |
+
+## Consequences
+
+| Positive | Negative |
+|----------|----------|
+| Frontmatter remains authoritative -- no drift between the app's view and the vault's actual files | No prototype demonstrates real vault file I/O -- this is new, unvalidated code |
+| Backend proxy avoids the client-side-API-key anti-pattern all 3 prototypes exhibited | New backend component (however small) is new operational surface a pure-Obsidian vault didn't have |
+| SOP-first vertical slice limits risk and gives a concrete validation point before the other 5 record types are touched | Until the slice extends, CAP/INCIDENT/CHANGE/AUDIT/TRAINING dashboards remain on the old Dataview tables -- two dashboard systems coexist temporarily |
+| Extract-and-attach asset handling gives Claude-assisted drafting without discarding the source evidence file | No charting library exists in any of the 3 sources -- root-cause trend and effectiveness-check-due visualizations still need to be built or sourced separately |
+
+## Implementation Notes
+
+- New code lives under `app/` at the repo root (sibling to `qa-brain/` and `docs/`).
+- Reference/salvage sources, not to be copied wholesale: `docs/Obsidian Vault/QA-Brain-Project/wiki/raw/eqms_cognitive_compiler_dashboard.tsx`, `eqms_engine_registry_sandbox.tsx`, `gemini_multimodal_workspace_compiler.tsx` -- see the wiki's per-file source pages for line-numbered feature maps of what to reuse vs. discard.
+- SOP vertical slice scope: dynamic form driven by a schema-as-data blueprint (pattern from `eqms_engine_registry_sandbox.tsx`), a status dashboard replacing `qa-brain/_dashboards/SOP-Control.md`'s Dataview queries, Claude-assisted intake (pattern from `eqms_cognitive_compiler_dashboard.tsx`, backend-proxied per this decision), and extract-and-attach file upload (pattern from `gemini_multimodal_workspace_compiler.tsx`, repointed at Claude instead of Gemini).
+- Not yet decided (out of scope for this ADR, to be resolved when the SOP slice is scoped for implementation): exact backend framework/hosting for the Claude proxy, exact file-watching/write strategy against `qa-brain/SOP/*.md`, and whether/how the old Dataview `Home.md` links out to the new app during the transition period.
+- Full decision trail and the 3 individual prototype reviews live in `docs/Obsidian Vault/QA-Brain-Project/wiki/wiki/concepts/Dashboard Rebuild Direction.md` and `Dashboard Feature Gap Map.md`.
+
+## Related ADRs
+
+- Superseded by [[ADR-002-console-rebuild-direction]] -- same day, same author. The "dashboard app" framing here was a misstatement of intent; the app is a full console with the dashboard as one screen inside it. Backend/data decisions in this ADR carry forward unchanged.

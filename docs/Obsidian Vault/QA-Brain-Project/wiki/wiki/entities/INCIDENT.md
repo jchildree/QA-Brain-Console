@@ -1,0 +1,9 @@
+# INCIDENT
+
+Record type. Deviation / nonconformance. ID pattern `INC-{YYYYMMDD}-001`. Center of the relationship model -- links to SOP (what was breached) and CAP (what fixes it). Has a built-in 5-step status-tracking table (Detection -> Containment -> Root Cause -> CAP Initiated -> Closure).
+
+## Related
+
+- [[QA-Brain - INCIDENT]]
+- [[Document ID Convention]]
+- [[Record Relationship Model]]

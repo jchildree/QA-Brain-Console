@@ -1,0 +1,1361 @@
+# Auth Gate + Pluggable AI Provider Implementation Plan
+
+> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
+
+**Goal:** Two additions to the existing SOP vertical slice (`app/backend`, `app/frontend`, built per `docs/superpowers/plans/2026-07-15-sop-vertical-slice.md`):
+
+1. **Auth gate** -- a single shared-passphrase login in front of the console, so individual users never see or enter the Anthropic API key. The key stays server-side in `.env`, exactly as it already does; this plan only adds a session boundary in front of the app so unauthenticated requests can't reach `/api/*`.
+2. **Pluggable AI provider** -- extract the hardcoded Anthropic call in `src/claude.js` behind a small provider interface, selected by an `AI_PROVIDER` env var, so a future "custom in-house agent" (anything that speaks a simple HTTP contract) can be swapped in without code changes. GitHub Copilot is explicitly **out of scope** for this plan -- see "Copilot note" below.
+
+**Non-goals:** Per-user accounts, password reset flows, RBAC/permissions, OAuth/SSO, rate limiting, Copilot integration. This is a single shared passphrase for a small internal team, matching the vault's existing "personal drafting layer, not the system of record" posture -- don't over-build.
+
+**Copilot note:** GitHub Copilot does not expose a general-purpose, server-callable text-completion API the way the Anthropic Messages API does (Copilot's APIs are IDE-completion-shaped, not "send arbitrary text, get JSON back"). Wiring Copilot in specifically needs separate research once there's a concrete API to target. The provider abstraction in this plan makes room for it later (add a `copilotProvider.js` implementing the same interface) without a rewrite -- it does not attempt Copilot integration now.
+
+---
+
+## Architecture additions
+
+**Auth (backend):**
+- `AUTH_PASSWORD` env var (plaintext shared passphrase, matches this project's minimal-dependency style -- no user table, no bcrypt needed for a single shared secret, but the comparison still uses a constant-time check to avoid timing attacks).
+- `src/auth.js`: `createSessionToken()`, `verifySessionToken(token)` -- HMAC-SHA256 signed token using a server-only `SESSION_SECRET` env var (random string, generated once, put in `.env`). No session store needed -- the token itself carries an expiry and is stateless (same approach as a signed JWT, implemented with core `crypto` to avoid adding a JWT dependency).
+- `src/routes/auth.js`: `POST /api/auth/login` (body `{ password }`, sets an `httpOnly, sameSite=lax` cookie on success, 401 on mismatch), `POST /api/auth/logout` (clears cookie), `GET /api/auth/me` (200 if session cookie valid, 401 otherwise).
+- `src/middleware/requireAuth.js`: Express middleware checking the session cookie; mounted on every `/api/*` route except `/api/health`, `/api/auth/login`.
+- `index.js`: add `cookie-parser` middleware, tighten CORS to `origin: 'http://localhost:5173', credentials: true` (wildcard CORS is incompatible with cookies), mount `requireAuth` before the existing routers.
+
+**Auth (frontend):**
+- `src/api/client.ts`: every `fetch` call adds `credentials: 'include'` so the session cookie round-trips; add `login(password)`, `logout()`, `checkSession()`.
+- `src/pages/LoginPage.tsx`: password field + submit, calls `client.login`, redirects into the app on success.
+- `src/components/AuthGate.tsx`: wraps `AppShell`+routes; on mount calls `checkSession()`; renders `LoginPage` if unauthenticated, children if authenticated, a loading state in between.
+- `App.tsx`: wrap the existing `BrowserRouter` contents in `AuthGate`.
+
+**Provider abstraction (backend only -- no frontend change needed, extraction UI is unaffected):**
+- `src/providers/types.js` (JSDoc-only, no runtime code): documents the contract -- `async extractFields(rawText: string): Promise<{department, tags, purpose, scope}>`.
+- `src/providers/anthropicProvider.js`: the existing `extractSopFields` logic from `src/claude.js`, moved here unchanged, wrapped as `{ extractFields }`.
+- `src/providers/customProvider.js`: POSTs `{ rawText }` to `CUSTOM_AI_ENDPOINT` (env var), expects the same JSON shape back, throws with a clear message if the endpoint is unset or the response doesn't match.
+- `src/providers/index.js`: `getProvider()` factory -- reads `AI_PROVIDER` env var (`anthropic` default, or `custom`), returns the matching provider module. Throws a clear startup error for an unrecognized value.
+- `src/claude.js` is deleted; `src/routes/intake.js` and `src/routes/attachments.js` are updated to call `getProvider().extractFields(...)` instead of importing `extractSopFields` directly and receiving an `anthropicClient` constructor argument. Router factories no longer take an `anthropicClient` param -- they call `getProvider()` internally (or accept an injected provider for testability, matching how tests already inject a fake Anthropic client today).
+- `index.js` no longer constructs `new Anthropic(...)` itself -- that construction moves inside `anthropicProvider.js`, called lazily only when `AI_PROVIDER=anthropic`, so `CUSTOM_AI_ENDPOINT`-only setups don't need an `ANTHROPIC_API_KEY` at all.
+- `.env.example` gains `AI_PROVIDER=anthropic`, `CUSTOM_AI_ENDPOINT=`, `SESSION_SECRET=`, `AUTH_PASSWORD=`.
+
+---
+
+## Before you start
+
+Both servers still run locally side by side:
+- Backend on `http://localhost:4000`
+- Frontend on `http://localhost:5173` (or another port if 5173 is taken by something else on the machine -- confirm with `netstat` before assuming the default port is free)
+
+New backend deps: `cookie-parser`. No new frontend deps.
+
+Every automated test in this plan mocks the auth cookie and the provider factory -- no real password or API key is required to get through the tasks. The final manual smoke test needs a real `AUTH_PASSWORD` and either a real `ANTHROPIC_API_KEY` or a `CUSTOM_AI_ENDPOINT` stub server.
+
+---
+
+## Part A -- Auth gate
+
+### Task 1: `src/auth.js` -- token sign/verify
+
+**Files:**
+- Create: `app/backend/src/auth.js`
+- Create: `app/backend/test/auth.test.js`
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `app/backend/test/auth.test.js`:
+
+```js
+describe('createSessionToken / verifySessionToken', () => {
+  const secret = 'test-secret';
+
+  it('round-trips a freshly created token', () => {
+    const token = createSessionToken(secret);
+    expect(verifySessionToken(token, secret)).toBe(true);
+  });
+
+  it('rejects a token signed with a different secret', () => {
+    const token = createSessionToken('other-secret');
+    expect(verifySessionToken(token, secret)).toBe(false);
+  });
+
+  it('rejects a tampered token', () => {
+    const token = createSessionToken(secret);
+    const tampered = token.slice(0, -1) + (token.slice(-1) === 'a' ? 'b' : 'a');
+    expect(verifySessionToken(tampered, secret)).toBe(false);
+  });
+
+  it('rejects an expired token', () => {
+    const token = createSessionToken(secret, { now: Date.now() - 1000 * 60 * 60 * 25, ttlMs: 1000 * 60 * 60 * 24 });
+    expect(verifySessionToken(token, secret)).toBe(false);
+  });
+});
+```
+
+(Import statement omitted above per this project's existing test convention -- vitest globals via `vitest.config.js`, see Task 1 Step 3's note on matching the existing `app/backend/vitest.config.js` pattern already in place from the prior plan.)
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run (from `app/backend`): `npx vitest run test/auth.test.js`
+Expected: FAIL -- `createSessionToken is not defined`
+
+- [ ] **Step 3: Write `src/auth.js`**
+
+Create `app/backend/src/auth.js`:
+
+```js
+const crypto = require('crypto');
+
+const DEFAULT_TTL_MS = 1000 * 60 * 60 * 24 * 7; // 7 days
+
+function sign(payload, secret) {
+  return crypto.createHmac('sha256', secret).update(payload).digest('hex');
+}
+
+function createSessionToken(secret, { now = Date.now(), ttlMs = DEFAULT_TTL_MS } = {}) {
+  const expires = now + ttlMs;
+  const payload = String(expires);
+  const signature = sign(payload, secret);
+  return `${payload}.${signature}`;
+}
+
+function verifySessionToken(token, secret) {
+  if (typeof token !== 'string' || !token.includes('.')) return false;
+  const [payload, signature] = token.split('.');
+  const expected = sign(payload, secret);
+  const sigBuf = Buffer.from(signature, 'hex');
+  const expectedBuf = Buffer.from(expected, 'hex');
+  if (sigBuf.length !== expectedBuf.length) return false;
+  if (!crypto.timingSafeEqual(sigBuf, expectedBuf)) return false;
+  const expires = Number(payload);
+  return Number.isFinite(expires) && Date.now() < expires;
+}
+
+module.exports = { createSessionToken, verifySessionToken };
+```
+
+Add the corresponding `require` line at the top of `test/auth.test.js`:
+
+```js
+const { createSessionToken, verifySessionToken } = require('../src/auth');
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npx vitest run test/auth.test.js`
+Expected: PASS (4 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/backend/src/auth.js app/backend/test/auth.test.js
+git commit -m "feat: add session token sign/verify helpers"
+```
+
+---
+
+### Task 2: `requireAuth` middleware
+
+**Files:**
+- Create: `app/backend/src/middleware/requireAuth.js`
+- Create: `app/backend/test/requireAuth.test.js`
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `app/backend/test/requireAuth.test.js`:
+
+```js
+const { createSessionToken } = require('../src/auth');
+const { createRequireAuth } = require('../src/middleware/requireAuth');
+
+const SECRET = 'test-secret';
+
+function makeApp() {
+  const express = require('express');
+  const cookieParser = require('cookie-parser');
+  const app = express();
+  app.use(cookieParser());
+  app.get('/api/protected', createRequireAuth(SECRET), (req, res) => res.json({ ok: true }));
+  return app;
+}
+
+describe('requireAuth', () => {
+  it('rejects a request with no session cookie', async () => {
+    const request = require('supertest');
+    const res = await request(makeApp()).get('/api/protected');
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects a request with an invalid session cookie', async () => {
+    const request = require('supertest');
+    const res = await request(makeApp()).get('/api/protected').set('Cookie', 'qa_session=garbage');
+    expect(res.status).toBe(401);
+  });
+
+  it('allows a request with a valid session cookie', async () => {
+    const request = require('supertest');
+    const token = createSessionToken(SECRET);
+    const res = await request(makeApp()).get('/api/protected').set('Cookie', `qa_session=${token}`);
+    expect(res.status).toBe(200);
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `npx vitest run test/requireAuth.test.js`
+Expected: FAIL -- `Cannot find module '../src/middleware/requireAuth'`
+
+- [ ] **Step 3: Install `cookie-parser`**
+
+Run (from `app/backend`): `npm install cookie-parser`
+
+- [ ] **Step 4: Write `src/middleware/requireAuth.js`**
+
+Create `app/backend/src/middleware` directory and file:
+
+```js
+const { verifySessionToken } = require('../auth');
+
+const COOKIE_NAME = 'qa_session';
+
+function createRequireAuth(secret) {
+  return function requireAuth(req, res, next) {
+    const token = req.cookies && req.cookies[COOKIE_NAME];
+    if (!token || !verifySessionToken(token, secret)) {
+      return res.status(401).json({ error: 'authentication required' });
+    }
+    next();
+  };
+}
+
+module.exports = { createRequireAuth, COOKIE_NAME };
+```
+
+- [ ] **Step 5: Run tests to verify they pass**
+
+Run: `npx vitest run test/requireAuth.test.js`
+Expected: PASS (3 tests)
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add app/backend/src/middleware app/backend/test/requireAuth.test.js app/backend/package.json app/backend/package-lock.json
+git commit -m "feat: add requireAuth middleware"
+```
+
+---
+
+### Task 3: `/api/auth` routes (login, logout, me)
+
+**Files:**
+- Create: `app/backend/src/routes/auth.js`
+- Create: `app/backend/test/auth.route.test.js`
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `app/backend/test/auth.route.test.js`:
+
+```js
+const express = require('express');
+const cookieParser = require('cookie-parser');
+const request = require('supertest');
+const { createAuthRouter } = require('../src/routes/auth');
+const { createRequireAuth } = require('../src/middleware/requireAuth');
+
+const SECRET = 'test-secret';
+const PASSWORD = 'correct-horse';
+
+function makeApp() {
+  const app = express();
+  app.use(express.json());
+  app.use(cookieParser());
+  app.use('/api', createAuthRouter(SECRET, PASSWORD));
+  app.get('/api/protected', createRequireAuth(SECRET), (req, res) => res.json({ ok: true }));
+  return app;
+}
+
+describe('POST /api/auth/login', () => {
+  it('sets a session cookie and returns 200 for the correct password', async () => {
+    const res = await request(makeApp()).post('/api/auth/login').send({ password: PASSWORD });
+    expect(res.status).toBe(200);
+    expect(res.headers['set-cookie'][0]).toMatch(/qa_session=/);
+  });
+
+  it('returns 401 for the wrong password', async () => {
+    const res = await request(makeApp()).post('/api/auth/login').send({ password: 'wrong' });
+    expect(res.status).toBe(401);
+  });
+
+  it('the returned cookie grants access to a protected route', async () => {
+    const app = makeApp();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ password: PASSWORD });
+    const res = await agent.get('/api/protected');
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('GET /api/auth/me', () => {
+  it('returns 401 when not logged in', async () => {
+    const res = await request(makeApp()).get('/api/auth/me');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 200 when logged in', async () => {
+    const app = makeApp();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ password: PASSWORD });
+    const res = await agent.get('/api/auth/me');
+    expect(res.status).toBe(200);
+  });
+});
+
+describe('POST /api/auth/logout', () => {
+  it('clears the session so a subsequent protected request 401s', async () => {
+    const app = makeApp();
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ password: PASSWORD });
+    await agent.post('/api/auth/logout');
+    const res = await agent.get('/api/protected');
+    expect(res.status).toBe(401);
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `npx vitest run test/auth.route.test.js`
+Expected: FAIL -- `Cannot find module '../src/routes/auth'`
+
+- [ ] **Step 3: Write `src/routes/auth.js`**
+
+Create `app/backend/src/routes/auth.js`:
+
+```js
+const express = require('express');
+const crypto = require('crypto');
+const { createSessionToken } = require('../auth');
+const { COOKIE_NAME } = require('../middleware/requireAuth');
+
+function safeEquals(a, b) {
+  const aBuf = Buffer.from(String(a));
+  const bBuf = Buffer.from(String(b));
+  if (aBuf.length !== bBuf.length) return false;
+  return crypto.timingSafeEqual(aBuf, bBuf);
+}
+
+function createAuthRouter(secret, expectedPassword) {
+  const router = express.Router();
+
+  router.post('/auth/login', (req, res) => {
+    const { password } = req.body;
+    if (!password || !safeEquals(password, expectedPassword)) {
+      return res.status(401).json({ error: 'invalid password' });
+    }
+    const token = createSessionToken(secret);
+    res.cookie(COOKIE_NAME, token, { httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 });
+    res.json({ ok: true });
+  });
+
+  router.post('/auth/logout', (req, res) => {
+    res.clearCookie(COOKIE_NAME);
+    res.json({ ok: true });
+  });
+
+  router.get('/auth/me', require('../middleware/requireAuth').createRequireAuth(secret), (req, res) => {
+    res.json({ ok: true });
+  });
+
+  return router;
+}
+
+module.exports = { createAuthRouter };
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npx vitest run test/auth.route.test.js`
+Expected: PASS (5 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/backend/src/routes/auth.js app/backend/test/auth.route.test.js
+git commit -m "feat: add /api/auth login, logout, me routes"
+```
+
+---
+
+### Task 4: Wire auth into `index.js` and lock down CORS
+
+**Files:**
+- Modify: `app/backend/src/index.js`
+- Modify: `app/backend/src/config.js` (add `SESSION_SECRET`, `AUTH_PASSWORD`)
+- Modify: `app/backend/.env.example`
+- Modify: `app/backend/test/sops.route.test.js`, `test/intake.route.test.js`, `test/attachments.route.test.js` (these now need a valid session cookie -- see Step 4)
+
+- [ ] **Step 1: Add config values**
+
+Edit `app/backend/src/config.js` -- add alongside `SOP_DIR`:
+
+```js
+const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-only-insecure-secret-change-me';
+const AUTH_PASSWORD = process.env.AUTH_PASSWORD || null;
+
+module.exports = { SOP_DIR, SESSION_SECRET, AUTH_PASSWORD };
+```
+
+- [ ] **Step 2: Wire it into `index.js`**
+
+Edit `app/backend/src/index.js` -- full replacement:
+
+```js
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const { SOP_DIR, SESSION_SECRET, AUTH_PASSWORD } = require('./config');
+const { createSopsRouter } = require('./routes/sops');
+const { createIntakeRouter } = require('./routes/intake');
+const { createAttachmentsRouter } = require('./routes/attachments');
+const { createAuthRouter } = require('./routes/auth');
+const { createRequireAuth } = require('./middleware/requireAuth');
+
+const app = express();
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173', credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
+
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true });
+});
+
+app.use('/api', createAuthRouter(SESSION_SECRET, AUTH_PASSWORD));
+
+const requireAuth = createRequireAuth(SESSION_SECRET);
+app.use('/api/sops', requireAuth);
+app.use('/api/intake', requireAuth);
+
+app.use('/api', createSopsRouter(SOP_DIR));
+app.use('/api', createIntakeRouter());
+app.use('/api', createAttachmentsRouter(SOP_DIR));
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 4000;
+  if (!AUTH_PASSWORD) {
+    console.warn('WARNING: AUTH_PASSWORD is not set -- login will reject all attempts. Set it in .env.');
+  }
+  app.listen(PORT, () => console.log(`QA-Brain backend listening on ${PORT}`));
+}
+
+module.exports = app;
+```
+
+Note: `createIntakeRouter()` and `createAttachmentsRouter(SOP_DIR)` no longer take an `anthropicClient` argument -- that's Part B (Task 9+). If Part A is implemented before Part B, temporarily keep the old signatures (`createIntakeRouter(anthropicClient)`, `createAttachmentsRouter(SOP_DIR, anthropicClient)`) and pass `new Anthropic(...)` as before; Task 9 removes it. Do not do both signature changes in the same task.
+
+- [ ] **Step 3: Update `.env.example`**
+
+Edit `app/backend/.env.example`:
+
+```
+ANTHROPIC_API_KEY=
+PORT=4000
+SESSION_SECRET=
+AUTH_PASSWORD=
+FRONTEND_ORIGIN=http://localhost:5173
+```
+
+- [ ] **Step 4: Update existing route tests to authenticate first**
+
+The `sops.route.test.js`, `intake.route.test.js`, and `attachments.route.test.js` files from the prior plan build their own bare Express app per test file (they don't go through `index.js`), so they are unaffected by `requireAuth` as written -- `requireAuth` is mounted in `index.js`, not inside `createSopsRouter` etc. No changes needed to those three files. Confirm this by re-running them:
+
+Run (from `app/backend`): `npx vitest run test/sops.route.test.js test/intake.route.test.js test/attachments.route.test.js`
+Expected: PASS, unchanged from before (this step is a verification step, not an edit step)
+
+- [ ] **Step 5: Add an integration test that exercises the real `index.js` app end to end through auth**
+
+Create `app/backend/test/index.integration.test.js`:
+
+```js
+process.env.AUTH_PASSWORD = 'integration-test-password';
+process.env.SESSION_SECRET = 'integration-test-secret';
+process.env.VAULT_SOP_DIR = require('os').tmpdir();
+
+const request = require('supertest');
+const app = require('../src/index');
+
+describe('index.js wiring', () => {
+  it('rejects /api/sops with no session', async () => {
+    const res = await request(app).get('/api/sops');
+    expect(res.status).toBe(401);
+  });
+
+  it('allows /api/health with no session', async () => {
+    const res = await request(app).get('/api/health');
+    expect(res.status).toBe(200);
+  });
+
+  it('allows /api/sops after logging in', async () => {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ password: 'integration-test-password' });
+    const res = await agent.get('/api/sops');
+    expect(res.status).toBe(200);
+  });
+});
+```
+
+- [ ] **Step 6: Run tests to verify they pass**
+
+Run: `npx vitest run test/index.integration.test.js`
+Expected: PASS (3 tests)
+
+- [ ] **Step 7: Run the full backend suite**
+
+Run: `npx vitest run`
+Expected: PASS, all suites
+
+- [ ] **Step 8: Commit**
+
+```bash
+git add app/backend/src/index.js app/backend/src/config.js app/backend/.env.example app/backend/test/index.integration.test.js
+git commit -m "feat: wire auth gate into index.js, lock CORS to credentialed origin"
+```
+
+---
+
+### Task 5: Frontend `client.ts` auth calls + `credentials: 'include'`
+
+**Files:**
+- Modify: `app/frontend/src/api/client.ts`
+- Modify: `app/frontend/src/api/client.test.ts`
+
+- [ ] **Step 1: Write the failing tests (add to the existing file)**
+
+Add to `app/frontend/src/api/client.test.ts`:
+
+```ts
+describe('login', () => {
+  it('POSTs the password with credentials included', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
+    await login('secret');
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ password: 'secret' }),
+    });
+  });
+
+  it('returns false for a rejected login', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: false });
+    expect(await login('wrong')).toBe(false);
+  });
+});
+
+describe('checkSession', () => {
+  it('returns true when /api/auth/me is 200', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true });
+    expect(await checkSession()).toBe(true);
+  });
+
+  it('returns false when /api/auth/me is 401', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: false });
+    expect(await checkSession()).toBe(false);
+  });
+});
+
+describe('logout', () => {
+  it('POSTs to /api/auth/logout with credentials included', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
+    await logout();
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  });
+});
+```
+
+Add `login`, `checkSession`, `logout` to the import line at the top of the file.
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run (from `app/frontend`): `npx vitest run src/api/client.test.ts`
+Expected: FAIL -- `login is not defined` etc.
+
+- [ ] **Step 3: Update `src/api/client.ts`**
+
+Add `credentials: 'include'` to every existing `fetch` call in the file (in `listSops`, `getSop`, `saveSop`, `extractFromText`, `uploadAttachment`), and append:
+
+```ts
+export async function login(password: string): Promise<boolean> {
+  const res = await fetch(`${BASE_URL}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ password }),
+  });
+  return res.ok;
+}
+
+export async function checkSession(): Promise<boolean> {
+  const res = await fetch(`${BASE_URL}/auth/me`, { credentials: 'include' });
+  return res.ok;
+}
+
+export async function logout(): Promise<void> {
+  await fetch(`${BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npx vitest run src/api/client.test.ts`
+Expected: PASS (all client tests, existing + 5 new)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/frontend/src/api/client.ts app/frontend/src/api/client.test.ts
+git commit -m "feat: add login/logout/checkSession to API client, send credentials"
+```
+
+---
+
+### Task 6: `LoginPage`
+
+**Files:**
+- Create: `app/frontend/src/pages/LoginPage.tsx`
+- Create: `app/frontend/src/pages/LoginPage.test.tsx`
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `app/frontend/src/pages/LoginPage.test.tsx`:
+
+```tsx
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { LoginPage } from './LoginPage';
+import * as client from '../api/client';
+
+describe('LoginPage', () => {
+  it('calls onSuccess after a successful login', async () => {
+    vi.spyOn(client, 'login').mockResolvedValue(true);
+    const onSuccess = vi.fn();
+    render(<LoginPage onSuccess={onSuccess} />);
+
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
+    fireEvent.click(screen.getByText('Log in'));
+
+    await waitFor(() => expect(onSuccess).toHaveBeenCalled());
+  });
+
+  it('shows an error and does not call onSuccess on a failed login', async () => {
+    vi.spyOn(client, 'login').mockResolvedValue(false);
+    const onSuccess = vi.fn();
+    render(<LoginPage onSuccess={onSuccess} />);
+
+    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong' } });
+    fireEvent.click(screen.getByText('Log in'));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/incorrect/i));
+    expect(onSuccess).not.toHaveBeenCalled();
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `npx vitest run src/pages/LoginPage.test.tsx`
+Expected: FAIL -- `Cannot find module './LoginPage'`
+
+- [ ] **Step 3: Write `src/pages/LoginPage.tsx`**
+
+Create `app/frontend/src/pages/LoginPage.tsx`:
+
+```tsx
+import { useState } from 'react';
+import { login } from '../api/client';
+
+export function LoginPage({ onSuccess }: { onSuccess: () => void }) {
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    const ok = await login(password);
+    setSubmitting(false);
+    if (ok) {
+      onSuccess();
+    } else {
+      setError('Incorrect password');
+    }
+  };
+
+  return (
+    <form className="login-page" onSubmit={handleSubmit}>
+      <h1>QA-Brain Console</h1>
+      <label>
+        <span>Password</span>
+        <input
+          aria-label="Password"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </label>
+      <button type="submit" disabled={submitting || !password}>
+        Log in
+      </button>
+      {error && <p role="alert">{error}</p>}
+    </form>
+  );
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npx vitest run src/pages/LoginPage.test.tsx`
+Expected: PASS (2 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/frontend/src/pages/LoginPage.tsx app/frontend/src/pages/LoginPage.test.tsx
+git commit -m "feat: add LoginPage"
+```
+
+---
+
+### Task 7: `AuthGate` wrapper
+
+**Files:**
+- Create: `app/frontend/src/components/AuthGate.tsx`
+- Create: `app/frontend/src/components/AuthGate.test.tsx`
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `app/frontend/src/components/AuthGate.test.tsx`:
+
+```tsx
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import { AuthGate } from './AuthGate';
+import * as client from '../api/client';
+
+describe('AuthGate', () => {
+  it('renders children when the session check succeeds', async () => {
+    vi.spyOn(client, 'checkSession').mockResolvedValue(true);
+    render(
+      <AuthGate>
+        <p>protected content</p>
+      </AuthGate>
+    );
+    await waitFor(() => expect(screen.getByText('protected content')).toBeInTheDocument());
+  });
+
+  it('renders the login page when the session check fails', async () => {
+    vi.spyOn(client, 'checkSession').mockResolvedValue(false);
+    render(
+      <AuthGate>
+        <p>protected content</p>
+      </AuthGate>
+    );
+    await waitFor(() => expect(screen.getByText('QA-Brain Console')).toBeInTheDocument());
+    expect(screen.queryByText('protected content')).not.toBeInTheDocument();
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `npx vitest run src/components/AuthGate.test.tsx`
+Expected: FAIL -- `Cannot find module './AuthGate'`
+
+- [ ] **Step 3: Write `src/components/AuthGate.tsx`**
+
+Create `app/frontend/src/components/AuthGate.tsx`:
+
+```tsx
+import { ReactNode, useEffect, useState } from 'react';
+import { checkSession } from '../api/client';
+import { LoginPage } from '../pages/LoginPage';
+
+export function AuthGate({ children }: { children: ReactNode }) {
+  const [status, setStatus] = useState<'checking' | 'authed' | 'unauthed'>('checking');
+
+  useEffect(() => {
+    checkSession().then((ok) => setStatus(ok ? 'authed' : 'unauthed'));
+  }, []);
+
+  if (status === 'checking') return <p>Loading…</p>;
+  if (status === 'unauthed') return <LoginPage onSuccess={() => setStatus('authed')} />;
+  return <>{children}</>;
+}
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npx vitest run src/components/AuthGate.test.tsx`
+Expected: PASS (2 tests)
+
+- [ ] **Step 5: Wire it into `App.tsx`**
+
+Edit `app/frontend/src/App.tsx` -- wrap the existing `<AppShell>...</AppShell>` block in `<AuthGate>`:
+
+```tsx
+import { AuthGate } from './components/AuthGate';
+// ...existing imports...
+
+export default function App() {
+  return (
+    <BrowserRouter>
+      <AuthGate>
+        <AppShell>
+          <Routes>
+            {/* ...existing routes, unchanged... */}
+          </Routes>
+        </AppShell>
+      </AuthGate>
+    </BrowserRouter>
+  );
+}
+```
+
+- [ ] **Step 6: Run the full frontend suite**
+
+Run: `npx vitest run`
+Expected: PASS, all suites
+
+- [ ] **Step 7: Commit**
+
+```bash
+git add app/frontend/src/components/AuthGate.tsx app/frontend/src/components/AuthGate.test.tsx app/frontend/src/App.tsx
+git commit -m "feat: gate console behind AuthGate/LoginPage"
+```
+
+---
+
+## Part B -- Pluggable AI provider
+
+### Task 8: Provider contract + Anthropic provider
+
+**Files:**
+- Create: `app/backend/src/providers/anthropicProvider.js`
+- Create: `app/backend/test/anthropicProvider.test.js`
+- Delete: `app/backend/src/claude.js`, `app/backend/test/claude.test.js` (superseded)
+
+- [ ] **Step 1: Write the failing test (this is `claude.test.js` from the prior plan, copied and renamed)**
+
+Create `app/backend/test/anthropicProvider.test.js`:
+
+```js
+function makeFakeClient(responseText) {
+  return {
+    messages: {
+      create: async () => ({ content: [{ type: 'text', text: responseText }] }),
+    },
+  };
+}
+
+describe('anthropicProvider.extractFields', () => {
+  it('parses the JSON response from the Claude client', async () => {
+    const fakeClient = makeFakeClient(JSON.stringify({
+      department: 'QC',
+      tags: ['ph-meter', 'calibration'],
+      purpose: 'Calibrate the pH meter before each shift.',
+      scope: 'QC lab, all pH meters.',
+    }));
+    const provider = createAnthropicProvider(fakeClient);
+
+    const result = await provider.extractFields('Raw note about calibrating the pH meter every shift in QC.');
+
+    expect(result).toEqual({
+      department: 'QC',
+      tags: ['ph-meter', 'calibration'],
+      purpose: 'Calibrate the pH meter before each shift.',
+      scope: 'QC lab, all pH meters.',
+    });
+  });
+
+  it('strips a markdown code fence before parsing', async () => {
+    const fakeClient = makeFakeClient('```json\n{"department":"QA","tags":[],"purpose":"p","scope":"s"}\n```');
+    const provider = createAnthropicProvider(fakeClient);
+    const result = await provider.extractFields('some text');
+    expect(result).toEqual({ department: 'QA', tags: [], purpose: 'p', scope: 's' });
+  });
+
+  it('throws a clear error on non-JSON response', async () => {
+    const fakeClient = makeFakeClient('sorry, I cannot help with that');
+    const provider = createAnthropicProvider(fakeClient);
+    await expect(provider.extractFields('some text')).rejects.toThrow(/non-JSON/);
+  });
+});
+```
+
+This carries forward the fence-stripping and error-wrapping behavior already fixed in `src/claude.js` -- see the note in Task 8 Step 3.
+
+- [ ] **Step 2: Run test to verify it fails**
+
+Run (from `app/backend`): `npx vitest run test/anthropicProvider.test.js`
+Expected: FAIL -- `createAnthropicProvider is not defined`
+
+- [ ] **Step 3: Write `src/providers/anthropicProvider.js`**
+
+Create `app/backend/src/providers` directory and file. This is `src/claude.js`'s existing logic (including the markdown-fence-stripping and error-wrapping already added after the vertical-slice code review), reshaped as a factory that takes a client and returns `{ extractFields }`:
+
+```js
+function createAnthropicProvider(client) {
+  async function extractFields(rawText) {
+    const message = await client.messages.create({
+      model: 'claude-sonnet-5',
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'user',
+          content: `Extract SOP frontmatter fields from this raw text. Return ONLY valid JSON with keys: department (one of QC, QA, IT, Operations), tags (array of strings), purpose (short string), scope (short string). Raw text:\n\n${rawText}`,
+        },
+      ],
+    });
+    const textBlock = message.content.find((block) => block.type === 'text');
+    const raw = textBlock.text.trim();
+    const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    const jsonText = fenced ? fenced[1] : raw;
+    try {
+      return JSON.parse(jsonText);
+    } catch (err) {
+      throw new Error(`Claude returned non-JSON response: ${err.message}`);
+    }
+  }
+
+  return { extractFields };
+}
+
+module.exports = { createAnthropicProvider };
+```
+
+- [ ] **Step 4: Run test to verify it passes**
+
+Run: `npx vitest run test/anthropicProvider.test.js`
+Expected: PASS (3 tests)
+
+- [ ] **Step 5: Delete the superseded files**
+
+Run: `rm app/backend/src/claude.js app/backend/test/claude.test.js`
+
+- [ ] **Step 6: Commit**
+
+```bash
+git add -A app/backend/src/providers app/backend/test/anthropicProvider.test.js
+git rm app/backend/src/claude.js app/backend/test/claude.test.js
+git commit -m "refactor: extract Anthropic extraction into anthropicProvider"
+```
+
+---
+
+### Task 9: Custom HTTP provider
+
+**Files:**
+- Create: `app/backend/src/providers/customProvider.js`
+- Create: `app/backend/test/customProvider.test.js`
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `app/backend/test/customProvider.test.js`:
+
+```js
+describe('customProvider.extractFields', () => {
+  it('POSTs rawText to the configured endpoint and returns the parsed fields', async () => {
+    const fakeFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ department: 'IT', tags: ['x'], purpose: 'p', scope: 's' }),
+    });
+    const provider = createCustomProvider('http://localhost:9999/extract', fakeFetch);
+
+    const result = await provider.extractFields('raw text');
+
+    expect(fakeFetch).toHaveBeenCalledWith('http://localhost:9999/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rawText: 'raw text' }),
+    });
+    expect(result).toEqual({ department: 'IT', tags: ['x'], purpose: 'p', scope: 's' });
+  });
+
+  it('throws when no endpoint is configured', () => {
+    expect(() => createCustomProvider(undefined, vi.fn())).toThrow(/CUSTOM_AI_ENDPOINT/);
+  });
+
+  it('throws a clear error when the endpoint responds with a non-2xx status', async () => {
+    const fakeFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    const provider = createCustomProvider('http://localhost:9999/extract', fakeFetch);
+    await expect(provider.extractFields('raw text')).rejects.toThrow(/500/);
+  });
+});
+```
+
+Add `const { vi } = require('vitest');` and `const { createCustomProvider } = require('../src/providers/customProvider');` at the top.
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `npx vitest run test/customProvider.test.js`
+Expected: FAIL -- `Cannot find module '../src/providers/customProvider'`
+
+- [ ] **Step 3: Write `src/providers/customProvider.js`**
+
+Create `app/backend/src/providers/customProvider.js`. Document the contract this expects any in-house agent to implement -- POST `{ rawText }`, respond 200 with `{ department, tags, purpose, scope }`:
+
+```js
+function createCustomProvider(endpoint, fetchImpl = fetch) {
+  if (!endpoint) {
+    throw new Error('CUSTOM_AI_ENDPOINT must be set when AI_PROVIDER=custom');
+  }
+
+  async function extractFields(rawText) {
+    const res = await fetchImpl(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rawText }),
+    });
+    if (!res.ok) {
+      throw new Error(`Custom AI endpoint returned ${res.status}`);
+    }
+    return res.json();
+  }
+
+  return { extractFields };
+}
+
+module.exports = { createCustomProvider };
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npx vitest run test/customProvider.test.js`
+Expected: PASS (3 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/backend/src/providers/customProvider.js app/backend/test/customProvider.test.js
+git commit -m "feat: add custom HTTP AI provider for in-house agents"
+```
+
+---
+
+### Task 10: Provider factory
+
+**Files:**
+- Create: `app/backend/src/providers/index.js`
+- Create: `app/backend/test/providerFactory.test.js`
+
+- [ ] **Step 1: Write the failing tests**
+
+Create `app/backend/test/providerFactory.test.js`:
+
+```js
+describe('getProvider', () => {
+  it('returns an Anthropic-backed provider when AI_PROVIDER is unset (default)', () => {
+    const provider = getProvider({ AI_PROVIDER: undefined, ANTHROPIC_API_KEY: 'test-key' });
+    expect(typeof provider.extractFields).toBe('function');
+  });
+
+  it('returns a custom provider when AI_PROVIDER=custom', () => {
+    const provider = getProvider({ AI_PROVIDER: 'custom', CUSTOM_AI_ENDPOINT: 'http://localhost:9999/extract' });
+    expect(typeof provider.extractFields).toBe('function');
+  });
+
+  it('throws a clear error for an unrecognized AI_PROVIDER value', () => {
+    expect(() => getProvider({ AI_PROVIDER: 'bogus' })).toThrow(/AI_PROVIDER/);
+  });
+});
+```
+
+- [ ] **Step 2: Run tests to verify they fail**
+
+Run: `npx vitest run test/providerFactory.test.js`
+Expected: FAIL -- `getProvider is not defined`
+
+- [ ] **Step 3: Write `src/providers/index.js`**
+
+Create `app/backend/src/providers/index.js`:
+
+```js
+const Anthropic = require('@anthropic-ai/sdk');
+const { createAnthropicProvider } = require('./anthropicProvider');
+const { createCustomProvider } = require('./customProvider');
+
+function getProvider(env = process.env) {
+  const kind = env.AI_PROVIDER || 'anthropic';
+
+  if (kind === 'anthropic') {
+    const client = new Anthropic({ apiKey: env.ANTHROPIC_API_KEY });
+    return createAnthropicProvider(client);
+  }
+
+  if (kind === 'custom') {
+    return createCustomProvider(env.CUSTOM_AI_ENDPOINT);
+  }
+
+  throw new Error(`Unrecognized AI_PROVIDER value: "${kind}" (expected "anthropic" or "custom")`);
+}
+
+module.exports = { getProvider };
+```
+
+- [ ] **Step 4: Run tests to verify they pass**
+
+Run: `npx vitest run test/providerFactory.test.js`
+Expected: PASS (3 tests)
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add app/backend/src/providers/index.js app/backend/test/providerFactory.test.js
+git commit -m "feat: add AI_PROVIDER factory (anthropic default, custom HTTP option)"
+```
+
+---
+
+### Task 11: Wire the provider factory into the intake and attachments routes
+
+**Files:**
+- Modify: `app/backend/src/routes/intake.js`
+- Modify: `app/backend/src/routes/attachments.js`
+- Modify: `app/backend/test/intake.route.test.js`
+- Modify: `app/backend/test/attachments.route.test.js`
+- Modify: `app/backend/src/index.js`
+- Modify: `app/backend/.env.example`
+
+This task changes both routers' factory signature from taking an `anthropicClient` to taking an already-resolved `provider` object (`{ extractFields }`) -- letting `index.js` decide the provider once via `getProvider()`, and letting tests inject a fake provider directly instead of a fake Anthropic client.
+
+- [ ] **Step 1: Update the existing route tests first (still red at this point -- confirms the old signature is gone)**
+
+Edit `app/backend/test/intake.route.test.js` -- replace `makeFakeClient` usage:
+
+```js
+function makeFakeProvider(fields) {
+  return { extractFields: async () => fields };
+}
+
+// in each test, replace:
+//   const fakeClient = makeFakeClient(JSON.stringify({...}));
+//   app.use('/api', createIntakeRouter(fakeClient));
+// with:
+//   const fakeProvider = makeFakeProvider({...});
+//   app.use('/api', createIntakeRouter(fakeProvider));
+```
+
+For the "returns 502 when the Claude client throws" test, change to:
+
+```js
+const fakeProvider = { extractFields: async () => { throw new Error('upstream down'); } };
+```
+
+Apply the equivalent change to `app/backend/test/attachments.route.test.js`'s `makeFakeClient` usages.
+
+- [ ] **Step 2: Run tests to verify they fail against the current (unmodified) router**
+
+Run: `npx vitest run test/intake.route.test.js test/attachments.route.test.js`
+Expected: FAIL -- the fake provider's `extractFields` never gets called because the router still expects an `anthropicClient` and calls `extractSopFields(client, ...)` internally
+
+- [ ] **Step 3: Update `src/routes/intake.js`**
+
+```js
+const express = require('express');
+
+function createIntakeRouter(provider) {
+  const router = express.Router();
+
+  router.post('/intake/extract', async (req, res) => {
+    const { rawText } = req.body;
+    if (!rawText || !rawText.trim()) {
+      return res.status(400).json({ error: 'rawText is required' });
+    }
+    try {
+      const extracted = await provider.extractFields(rawText);
+      res.json(extracted);
+    } catch (err) {
+      res.status(502).json({ error: 'AI extraction failed', detail: err.message });
+    }
+  });
+
+  return router;
+}
+
+module.exports = { createIntakeRouter };
+```
+
+- [ ] **Step 4: Update `src/routes/attachments.js`**
+
+Replace the `require('../claude')` import and the `extractSopFields(anthropicClient, ...)` call:
+
+```js
+const express = require('express');
+const fs = require('fs');
+const path = require('path');
+const multer = require('multer');
+
+function createAttachmentsRouter(sopDir, provider) {
+  const router = express.Router();
+  const upload = multer({ storage: multer.memoryStorage() });
+
+  router.post('/sops/:filename/attachments', upload.single('evidence'), async (req, res) => {
+    if (!req.file) {
+      return res.status(400).json({ error: 'evidence file is required' });
+    }
+
+    const sopBase = path.basename(req.params.filename, '.md');
+    const attachDir = path.join(sopDir, 'attachments', sopBase);
+    fs.mkdirSync(attachDir, { recursive: true });
+    const safeName = path.basename(req.file.originalname);
+    const destPath = path.join(attachDir, safeName);
+    fs.writeFileSync(destPath, req.file.buffer);
+
+    let extracted = null;
+    let note = null;
+
+    if (req.file.mimetype.startsWith('text/')) {
+      try {
+        extracted = await provider.extractFields(req.file.buffer.toString('utf8'));
+      } catch (err) {
+        note = `Extraction failed: ${err.message}`;
+      }
+    } else {
+      note = 'Binary evidence attached; no automatic extraction for this file type';
+    }
+
+    res.json({ attachmentPath: destPath, extracted, note });
+  });
+
+  return router;
+}
+
+module.exports = { createAttachmentsRouter };
+```
+
+(This carries forward the `path.basename` traversal fix already applied after the vertical-slice code review -- do not regress it.)
+
+- [ ] **Step 5: Run tests to verify they pass**
+
+Run: `npx vitest run test/intake.route.test.js test/attachments.route.test.js`
+Expected: PASS
+
+- [ ] **Step 6: Wire `getProvider()` into `index.js`**
+
+Edit `app/backend/src/index.js` -- replace the `Anthropic` client construction and router mounting:
+
+```js
+const express = require('express');
+const cors = require('cors');
+const cookieParser = require('cookie-parser');
+const { SOP_DIR, SESSION_SECRET, AUTH_PASSWORD } = require('./config');
+const { getProvider } = require('./providers');
+const { createSopsRouter } = require('./routes/sops');
+const { createIntakeRouter } = require('./routes/intake');
+const { createAttachmentsRouter } = require('./routes/attachments');
+const { createAuthRouter } = require('./routes/auth');
+const { createRequireAuth } = require('./middleware/requireAuth');
+
+const app = express();
+app.use(cors({ origin: process.env.FRONTEND_ORIGIN || 'http://localhost:5173', credentials: true }));
+app.use(express.json());
+app.use(cookieParser());
+
+app.get('/api/health', (req, res) => {
+  res.json({ ok: true });
+});
+
+app.use('/api', createAuthRouter(SESSION_SECRET, AUTH_PASSWORD));
+
+const requireAuth = createRequireAuth(SESSION_SECRET);
+app.use('/api/sops', requireAuth);
+app.use('/api/intake', requireAuth);
+
+const provider = getProvider();
+
+app.use('/api', createSopsRouter(SOP_DIR));
+app.use('/api', createIntakeRouter(provider));
+app.use('/api', createAttachmentsRouter(SOP_DIR, provider));
+
+if (require.main === module) {
+  const PORT = process.env.PORT || 4000;
+  if (!AUTH_PASSWORD) {
+    console.warn('WARNING: AUTH_PASSWORD is not set -- login will reject all attempts. Set it in .env.');
+  }
+  app.listen(PORT, () => console.log(`QA-Brain backend listening on ${PORT}`));
+}
+
+module.exports = app;
+```
+
+Note `getProvider()` is called once at module load, matching how `SOP_DIR` is already resolved once. If `AI_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` is unset, `new Anthropic({ apiKey: undefined })` does not throw at construction time (the SDK only errors on first actual API call) -- this matches the existing behavior from the vertical-slice plan and is acceptable; the manual smoke test in Task 12 is what catches a genuinely missing key.
+
+- [ ] **Step 7: Update `.env.example`**
+
+Edit `app/backend/.env.example` to its final form:
+
+```
+ANTHROPIC_API_KEY=
+PORT=4000
+SESSION_SECRET=
+AUTH_PASSWORD=
+FRONTEND_ORIGIN=http://localhost:5173
+AI_PROVIDER=anthropic
+CUSTOM_AI_ENDPOINT=
+```
+
+- [ ] **Step 8: Run the full backend suite**
+
+Run: `npx vitest run`
+Expected: PASS, all suites (auth, requireAuth, auth route, index integration, vault, config, sops route, anthropicProvider, customProvider, providerFactory, intake route, attachments route, health)
+
+- [ ] **Step 9: Commit**
+
+```bash
+git add app/backend/src/routes/intake.js app/backend/src/routes/attachments.js app/backend/src/index.js app/backend/.env.example app/backend/test/intake.route.test.js app/backend/test/attachments.route.test.js
+git commit -m "feat: wire provider factory into intake/attachments routes and index.js"
+```
+
+---
+
+### Task 12: Final verification pass
+
+**Files:** none (verification only)
+
+- [ ] **Step 1: Run the full backend suite**
+
+Run (from `app/backend`): `npx vitest run`
+Expected: PASS, all suites listed in Task 11 Step 8
+
+- [ ] **Step 2: Run the full frontend suite**
+
+Run (from `app/frontend`): `npx vitest run`
+Expected: PASS, all suites from the vertical-slice plan plus `client.ts` auth tests, `LoginPage`, `AuthGate`
+
+- [ ] **Step 3: Manual end-to-end auth check**
+
+Set a real `AUTH_PASSWORD` and `SESSION_SECRET` in `app/backend/.env` (any random string for the secret). Start both servers. Open the frontend in a browser. Confirm:
+- The console shows the login form, not the app shell, on first load.
+- A wrong password shows "Incorrect password" and does not proceed.
+- The correct password loads the console (Overview screen).
+- Reloading the page stays logged in (session cookie persists).
+- Opening the Network tab and calling `DELETE`-ing the `qa_session` cookie (or using an incognito window) then reloading shows the login form again.
+- Directly `curl`-ing `http://localhost:4000/api/sops` with no cookie returns 401.
+
+- [ ] **Step 4: Manual end-to-end provider check**
+
+With `AI_PROVIDER=anthropic` (default) and a real `ANTHROPIC_API_KEY` set, confirm the Intake page's "Extract" button still works as it did in the vertical-slice plan.
+
+Then set `AI_PROVIDER=custom` and `CUSTOM_AI_ENDPOINT=http://localhost:9001/extract` in `.env`, and stand up a one-line stub server to prove the swap works end to end:
+
+```bash
+node -e "require('http').createServer((req,res)=>{let b='';req.on('data',c=>b+=c);req.on('end',()=>{res.setHeader('Content-Type','application/json');res.end(JSON.stringify({department:'IT',tags:['stub'],purpose:'stub purpose',scope:'stub scope'}))})}).listen(9001)"
+```
+
+Restart the backend, use the Intake page's Extract button again, and confirm the form pre-fills with the stub's `{department: 'IT', tags: ['stub'], ...}` values instead of a real Claude response -- proving the provider is genuinely swappable via env var, not hardcoded.
+
+- [ ] **Step 5: Report results to the user**
+
+Summarize which of the above passed/failed. Do not claim the feature is complete until both automated suites pass and both manual checks in Steps 3 and 4 are confirmed.

@@ -1,0 +1,8 @@
+# Architectural Decision Records
+
+| ADR | Title | Status | Affected Layers | Date |
+|-----|-------|--------|-----------------|------|
+| ADR-001 | Dashboard Rebuild Direction | DEPRECATED (superseded by ADR-002) | Frontend · Backend · Data | 2026-07-15 |
+| ADR-002 | Console Rebuild Direction | ACCEPTED | Frontend · Backend · Data | 2026-07-15 |
+
+**Status values:** PROPOSED | ACCEPTED | DEPRECATED
