@@ -2,9 +2,11 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { CapIntake } from './CapIntake';
+import * as relatedRecords from '../api/relatedRecords';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
+  vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
 });
 
 describe('CapIntake', () => {

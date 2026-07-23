@@ -16,7 +16,7 @@ const NAV_LINKS: { label: string; to: string }[] = [
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-green-500/30 selection:text-green-300">
+    <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)] font-sans selection:bg-green-500/30 selection:text-green-300">
       <header className="sticky top-0 z-50 border-b border-slate-900 bg-slate-900/60 backdrop-blur-md px-6 py-4 flex flex-wrap items-center gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400 font-bold text-xl">

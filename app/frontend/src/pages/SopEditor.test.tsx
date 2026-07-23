@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { SopEditor } from './SopEditor';
 import * as client from '../api/client';
+import * as relatedRecords from '../api/relatedRecords';
 
 beforeEach(() => {
+  vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
   vi.spyOn(client, 'getSop').mockResolvedValue({
     filename: 'SOP-1.md',
     frontmatter: { status: 'Draft', version: '1.0', owner: 'Jane', department: 'QA', review_date: '2026-01-01', tags: [] },

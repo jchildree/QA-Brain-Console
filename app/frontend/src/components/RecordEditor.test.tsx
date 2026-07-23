@@ -1,7 +1,12 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { RecordEditor } from './RecordEditor';
 import { capBlueprint } from '../blueprint/capBlueprint';
+import * as relatedRecords from '../api/relatedRecords';
+
+beforeEach(() => {
+  vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
+});
 
 function makeFakeApi() {
   return {

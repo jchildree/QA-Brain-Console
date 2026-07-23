@@ -11,4 +11,5 @@ export const trainingBlueprint: BlueprintField[] = [
   { key: 'tags', label: 'Tags', type: 'tags' },
   { key: 'employee_name', label: 'Employee Name', type: 'text' },
   { key: 'role', label: 'Role', type: 'text' },
+  { key: 'related_documents', label: 'Related Documents', type: 'related' },
 ];

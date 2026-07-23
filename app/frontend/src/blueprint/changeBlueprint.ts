@@ -11,4 +11,5 @@ export const changeBlueprint: BlueprintField[] = [
   { key: 'tags', label: 'Tags', type: 'tags' },
   { key: 'change_description', label: 'Change Description', type: 'text' },
   { key: 'reason_for_change', label: 'Reason for Change', type: 'text' },
+  { key: 'related_documents', label: 'Related Documents', type: 'related' },
 ];

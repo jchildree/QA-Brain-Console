@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react';
 import type { BlueprintField } from '../blueprint/sopBlueprint';
+import { fetchAllRecordOptions, type RecordOption } from '../api/relatedRecords';
 
 interface Props {
   blueprint: BlueprintField[];
@@ -8,6 +10,40 @@ interface Props {
 
 const inputClasses =
   'bg-slate-950 border border-slate-800 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green-500 text-slate-200 font-mono';
+
+function RelatedDocumentsPicker({
+  labelText,
+  value,
+  onChange,
+}: {
+  labelText: string;
+  value: string[];
+  onChange: (value: string[]) => void;
+}) {
+  const [options, setOptions] = useState<RecordOption[]>([]);
+
+  useEffect(() => {
+    fetchAllRecordOptions()
+      .then(setOptions)
+      .catch(() => setOptions([]));
+  }, []);
+
+  return (
+    <select
+      aria-label={labelText}
+      multiple
+      className={`${inputClasses} h-28`}
+      value={value}
+      onChange={(e) => onChange(Array.from(e.target.selectedOptions).map((opt) => opt.value))}
+    >
+      {options.map((opt) => (
+        <option key={opt.value} value={opt.value}>
+          {opt.label}
+        </option>
+      ))}
+    </select>
+  );
+}
 
 export function DynamicForm({ blueprint, values, onChange }: Props) {
   return (
@@ -31,6 +67,12 @@ export function DynamicForm({ blueprint, values, onChange }: Props) {
                   </option>
                 ))}
               </select>
+            ) : field.type === 'related' ? (
+              <RelatedDocumentsPicker
+                labelText={labelText}
+                value={(values[field.key] as string[]) ?? []}
+                onChange={(ids) => onChange(field.key, ids)}
+              />
             ) : field.type === 'tags' ? (
               <input
                 aria-label={labelText}

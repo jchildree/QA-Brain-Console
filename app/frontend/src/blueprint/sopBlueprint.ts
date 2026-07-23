@@ -1,4 +1,4 @@
-export type FieldType = 'text' | 'select' | 'date' | 'tags';
+export type FieldType = 'text' | 'select' | 'date' | 'tags' | 'related';
 
 export interface BlueprintField {
   key: string;
@@ -17,4 +17,5 @@ export const sopBlueprint: BlueprintField[] = [
   { key: 'review_date', label: 'Review Date', type: 'date', required: true },
   { key: 'department', label: 'Department', type: 'select', options: ['QC', 'QA', 'IT', 'Operations'], required: true },
   { key: 'tags', label: 'Tags', type: 'tags' },
+  { key: 'related_documents', label: 'Related Documents', type: 'related' },
 ];

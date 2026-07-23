@@ -11,4 +11,5 @@ export const auditBlueprint: BlueprintField[] = [
   { key: 'tags', label: 'Tags', type: 'tags' },
   { key: 'audit_type', label: 'Audit Type', type: 'select', options: ['Internal', 'External', 'Supplier'] },
   { key: 'scope', label: 'Scope', type: 'text' },
+  { key: 'related_documents', label: 'Related Documents', type: 'related' },
 ];

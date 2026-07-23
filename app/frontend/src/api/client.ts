@@ -141,3 +141,31 @@ export function createRecordApi(typeSlug: string) {
     },
   };
 }
+
+export interface SearchResult {
+  type: string;
+  urlSlug: string;
+  filename: string;
+  id: string;
+  status: string;
+  [key: string]: unknown;
+}
+
+export async function search(query: string): Promise<SearchResult[]> {
+  const res = await fetch(`${BASE_URL}/search?q=${encodeURIComponent(query)}`, { credentials: 'include' });
+  if (!res.ok) throw new Error('Search failed');
+  return res.json();
+}
+
+export interface EvidenceFile {
+  type: string;
+  urlSlug: string;
+  recordFilename: string;
+  attachmentFilename: string;
+}
+
+export async function listEvidence(): Promise<EvidenceFile[]> {
+  const res = await fetch(`${BASE_URL}/evidence`, { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to load evidence library');
+  return res.json();
+}

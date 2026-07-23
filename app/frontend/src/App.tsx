@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useParams } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { AuthGate } from './components/AuthGate';
+import { ThemeProvider } from './context/ThemeContext';
 import { Overview } from './pages/Overview';
 import { Dashboard } from './pages/Dashboard';
 import { SopEditor } from './pages/SopEditor';
@@ -62,35 +63,37 @@ function TrainingEditorRoute() {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <AuthGate>
-        <AppShell>
-          <Routes>
-            <Route path="/" element={<Overview />} />
-            <Route path="/sop" element={<Dashboard />} />
-            <Route path="/sop/new" element={<Intake />} />
-            <Route path="/sop/:filename" element={<SopEditorRoute />} />
-            <Route path="/cap" element={<CapDashboard />} />
-            <Route path="/cap/new" element={<CapIntake />} />
-            <Route path="/cap/:filename" element={<CapEditorRoute />} />
-            <Route path="/incident" element={<IncidentDashboard />} />
-            <Route path="/incident/new" element={<IncidentIntake />} />
-            <Route path="/incident/:filename" element={<IncidentEditorRoute />} />
-            <Route path="/change" element={<ChangeDashboard />} />
-            <Route path="/change/new" element={<ChangeIntake />} />
-            <Route path="/change/:filename" element={<ChangeEditorRoute />} />
-            <Route path="/audit" element={<AuditDashboard />} />
-            <Route path="/audit/new" element={<AuditIntake />} />
-            <Route path="/audit/:filename" element={<AuditEditorRoute />} />
-            <Route path="/training" element={<TrainingDashboard />} />
-            <Route path="/training/new" element={<TrainingIntake />} />
-            <Route path="/training/:filename" element={<TrainingEditorRoute />} />
-            <Route path="/settings" element={<SettingsPage />} />
-            <Route path="/evidence" element={<EvidenceLibraryPage />} />
-            <Route path="/search" element={<SearchPage />} />
-          </Routes>
-        </AppShell>
-      </AuthGate>
-    </BrowserRouter>
+    <ThemeProvider>
+      <BrowserRouter>
+        <AuthGate>
+          <AppShell>
+            <Routes>
+              <Route path="/" element={<Overview />} />
+              <Route path="/sop" element={<Dashboard />} />
+              <Route path="/sop/new" element={<Intake />} />
+              <Route path="/sop/:filename" element={<SopEditorRoute />} />
+              <Route path="/cap" element={<CapDashboard />} />
+              <Route path="/cap/new" element={<CapIntake />} />
+              <Route path="/cap/:filename" element={<CapEditorRoute />} />
+              <Route path="/incident" element={<IncidentDashboard />} />
+              <Route path="/incident/new" element={<IncidentIntake />} />
+              <Route path="/incident/:filename" element={<IncidentEditorRoute />} />
+              <Route path="/change" element={<ChangeDashboard />} />
+              <Route path="/change/new" element={<ChangeIntake />} />
+              <Route path="/change/:filename" element={<ChangeEditorRoute />} />
+              <Route path="/audit" element={<AuditDashboard />} />
+              <Route path="/audit/new" element={<AuditIntake />} />
+              <Route path="/audit/:filename" element={<AuditEditorRoute />} />
+              <Route path="/training" element={<TrainingDashboard />} />
+              <Route path="/training/new" element={<TrainingIntake />} />
+              <Route path="/training/:filename" element={<TrainingEditorRoute />} />
+              <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/evidence" element={<EvidenceLibraryPage />} />
+              <Route path="/search" element={<SearchPage />} />
+            </Routes>
+          </AppShell>
+        </AuthGate>
+      </BrowserRouter>
+    </ThemeProvider>
   );
 }

@@ -2,8 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { Intake } from './Intake';
 import * as client from '../api/client';
+import * as relatedRecords from '../api/relatedRecords';
 
 beforeEach(() => {
+  vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
   vi.spyOn(client, 'extractFromText').mockResolvedValue({ department: 'QC', tags: ['calibration'], purpose: 'p', scope: 's' });
 });
 

@@ -11,4 +11,5 @@ export const capBlueprint: BlueprintField[] = [
   { key: 'tags', label: 'Tags', type: 'tags' },
   { key: 'root_cause', label: 'Root Cause', type: 'text' },
   { key: 'effectiveness_status', label: 'Effectiveness Status', type: 'select', options: ['Pending', 'Pass', 'Fail', 'N/A'], required: true },
+  { key: 'related_documents', label: 'Related Documents', type: 'related' },
 ];

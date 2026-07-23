@@ -7,6 +7,8 @@ const { getProvider } = require('./providers');
 const { createRecordsRouter } = require('./routes/records');
 const { createIntakeRouter } = require('./routes/intake');
 const { createAttachmentsRouter } = require('./routes/attachments');
+const { createSearchRouter } = require('./routes/search');
+const { createEvidenceRouter } = require('./routes/evidence');
 const { createAuthRouter } = require('./routes/auth');
 const { createRequireAuth } = require('./middleware/requireAuth');
 
@@ -30,6 +32,12 @@ for (const [slug, { idPrefix, dir, urlSlug }] of Object.entries(RECORD_TYPES)) {
   app.use('/api', createRecordsRouter(urlSlug, idPrefix, dir));
   app.use('/api', createAttachmentsRouter(urlSlug, dir, provider));
 }
+
+app.use('/api/search', requireAuth);
+app.use('/api', createSearchRouter(RECORD_TYPES));
+
+app.use('/api/evidence', requireAuth);
+app.use('/api', createEvidenceRouter(RECORD_TYPES));
 
 if (require.main === module) {
   const PORT = process.env.PORT || 4000;
