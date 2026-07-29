@@ -20,9 +20,8 @@ describe('AppShell', () => {
       ['Change', '/change'],
       ['Audit', '/audit'],
       ['Training', '/training'],
-      ['Settings', '/settings'],
       ['Evidence Library', '/evidence'],
-      ['Search', '/search'],
+      ['Settings', '/settings'],
     ];
     expected.forEach(([text, href]) => {
       expect(screen.getByRole('link', { name: text })).toHaveAttribute('href', href);

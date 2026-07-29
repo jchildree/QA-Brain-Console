@@ -9,44 +9,42 @@ const NAV_LINKS: { label: string; to: string }[] = [
   { label: 'Change', to: '/change' },
   { label: 'Audit', to: '/audit' },
   { label: 'Training', to: '/training' },
-  { label: 'Settings', to: '/settings' },
   { label: 'Evidence Library', to: '/evidence' },
-  { label: 'Search', to: '/search' },
+  { label: 'Settings', to: '/settings' },
 ];
+
+const TODAY = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
 
 export function AppShell({ children }: { children: ReactNode }) {
   return (
-    <div className="min-h-screen bg-[var(--bg)] text-[var(--fg)] font-sans selection:bg-green-500/30 selection:text-green-300">
-      <header className="sticky top-0 z-50 border-b border-slate-900 bg-slate-900/60 backdrop-blur-md px-6 py-4 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400 font-bold text-xl">
-            Q
-          </div>
+    <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] selection:bg-[var(--gold)]/30 selection:text-[var(--ink)]">
+      <div className="max-w-[1640px] mx-auto px-6 pt-6 pb-11">
+        <div className="masthead">
           <div>
-            <h1 className="text-sm font-semibold tracking-wide text-slate-200 uppercase">QA-Brain Console</h1>
-            <p className="text-xs text-slate-400 font-mono">6-type vertical slice</p>
+            <h1>QA-Brain Console</h1>
+            <div className="sub">Register of Controlled Records &middot; {TODAY}</div>
+          </div>
+          <div className="masthead-right">
+            <b>Joseph Childree</b>
+            QA &middot; Quality System Owner
           </div>
         </div>
-        <nav className="flex flex-wrap items-center gap-1 text-xs font-mono">
+
+        <nav className="tabs">
           {NAV_LINKS.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}
               end={link.to === '/'}
-              className={({ isActive }) =>
-                `px-3 py-1.5 rounded-lg font-bold transition-colors ${
-                  isActive
-                    ? 'bg-green-500/10 text-green-400 border border-green-500/20'
-                    : 'text-slate-400 border border-transparent hover:bg-slate-800/60 hover:text-slate-200'
-                }`
-              }
+              className={({ isActive }) => `tab${isActive ? ' active' : ''}`}
             >
               {link.label}
             </NavLink>
           ))}
         </nav>
-      </header>
-      <main className="max-w-6xl mx-auto px-6 py-8">{children}</main>
+
+        <main>{children}</main>
+      </div>
     </div>
   );
 }

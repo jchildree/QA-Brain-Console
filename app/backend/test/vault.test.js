@@ -48,6 +48,13 @@ describe('listSops', () => {
     const sops = listSops(tmpDir);
     expect(sops).toHaveLength(1);
   });
+
+  it('ignores markdown files with no id frontmatter (e.g. unrelated Obsidian notes)', () => {
+    fs.writeFileSync(path.join(tmpDir, 'Random Note.md'), '---\ntags: [misc]\n---\n\nnot a QA record\n', 'utf8');
+    const sops = listSops(tmpDir);
+    expect(sops).toHaveLength(1);
+    expect(sops[0].id).toBe('SOP-20260101-001');
+  });
 });
 
 describe('readSop', () => {

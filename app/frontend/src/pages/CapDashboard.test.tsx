@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { CapDashboard } from './CapDashboard';
 
 const FIXED_NOW = new Date('2026-07-15T00:00:00Z');
@@ -19,7 +20,11 @@ describe('CapDashboard', () => {
       ],
     });
 
-    render(<CapDashboard />);
+    render(
+      <MemoryRouter>
+        <CapDashboard />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/cap', { credentials: 'include' }));
     await waitFor(() =>

@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { RecordDashboard } from './RecordDashboard';
 
 const FIXED_NOW = new Date('2026-07-15T00:00:00Z');
@@ -27,7 +28,11 @@ describe('RecordDashboard', () => {
       { id: 'CAP-3', status: 'Obsolete', version: '1.0', department: 'QC', review_date: '2025-01-01', owner: 'Jane', filename: 'CAP-3.md' },
     ]);
 
-    render(<RecordDashboard api={api} title="CAP" />);
+    render(
+      <MemoryRouter>
+        <RecordDashboard api={api} title="CAP" type="cap" />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(screen.getByText('All Controlled CAPs (2)')).toBeInTheDocument());
     expect(screen.getByText('Overdue for Review (1)')).toBeInTheDocument();
@@ -39,7 +44,11 @@ describe('RecordDashboard', () => {
     const api = makeFakeApi([]);
     api.list.mockRejectedValue(new Error('Failed to load cap records'));
 
-    render(<RecordDashboard api={api} title="CAP" />);
+    render(
+      <MemoryRouter>
+        <RecordDashboard api={api} title="CAP" type="cap" />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Failed to load cap records'));
   });

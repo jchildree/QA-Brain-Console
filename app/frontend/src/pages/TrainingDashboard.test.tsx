@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { TrainingDashboard } from './TrainingDashboard';
 
 beforeEach(() => {
@@ -15,7 +16,11 @@ describe('TrainingDashboard', () => {
       ],
     });
 
-    render(<TrainingDashboard />);
+    render(
+      <MemoryRouter>
+        <TrainingDashboard />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/training', { credentials: 'include' }));
     await waitFor(() =>

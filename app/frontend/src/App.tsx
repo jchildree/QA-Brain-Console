@@ -23,7 +23,6 @@ import { TrainingEditor } from './pages/TrainingEditor';
 import { TrainingIntake } from './pages/TrainingIntake';
 import { SettingsPage } from './pages/SettingsPage';
 import { EvidenceLibraryPage } from './pages/EvidenceLibraryPage';
-import { SearchPage } from './pages/SearchPage';
 
 function SopEditorRoute() {
   const { filename } = useParams<{ filename: string }>();
@@ -89,7 +88,6 @@ export default function App() {
               <Route path="/training/:filename" element={<TrainingEditorRoute />} />
               <Route path="/settings" element={<SettingsPage />} />
               <Route path="/evidence" element={<EvidenceLibraryPage />} />
-              <Route path="/search" element={<SearchPage />} />
             </Routes>
           </AppShell>
         </AuthGate>

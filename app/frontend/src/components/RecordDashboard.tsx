@@ -1,50 +1,64 @@
 import { useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
+import { Link } from 'react-router-dom';
 import { type RecordSummary, type createRecordApi } from '../api/client';
-import { StatusPill } from './StatusPill';
+import { RecordCard } from './RecordCard';
+import { StripChart } from './StripChart';
+import { dailyCumulativeCounts } from '../api/chartData';
+import { stampClass, DEFAULT_STAMP } from '../theme';
 
 export function isOverdue(record: RecordSummary): boolean {
   return record.status === 'Approved' && new Date(record.review_date) < new Date();
 }
 
-function RecordTable({ records }: { records: RecordSummary[] }) {
+function CardGrid({ records, type, typeLabel }: { records: RecordSummary[]; type: string; typeLabel: string }) {
   if (records.length === 0) {
-    return <p className="text-sm text-slate-500 font-mono px-1 py-3">No records.</p>;
+    return <p className="text-sm px-1 py-3" style={{ color: 'var(--ink-dim)' }}>No records.</p>;
   }
   return (
-    <div className="rounded-xl border border-slate-800 overflow-hidden">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-slate-900 text-slate-400 text-xs font-mono uppercase tracking-wide">
-            <th className="text-left font-semibold px-4 py-2.5">ID</th>
-            <th className="text-left font-semibold px-4 py-2.5">Version</th>
-            <th className="text-left font-semibold px-4 py-2.5">Status</th>
-            <th className="text-left font-semibold px-4 py-2.5">Department</th>
-            <th className="text-left font-semibold px-4 py-2.5">Review Date</th>
-            <th className="text-left font-semibold px-4 py-2.5">Owner</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-slate-800">
-          {records.map((record) => (
-            <tr key={record.filename} className="hover:bg-slate-900/60 transition-colors">
-              <td className="px-4 py-2.5 font-mono text-slate-200">{record.id}</td>
-              <td className="px-4 py-2.5 text-slate-300">{record.version}</td>
-              <td className="px-4 py-2.5">
-                <StatusPill status={record.status} />
-              </td>
-              <td className="px-4 py-2.5 text-slate-300">{record.department}</td>
-              <td className="px-4 py-2.5 text-slate-300">{record.review_date}</td>
-              <td className="px-4 py-2.5 text-slate-300">{record.owner}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+    <div className="specimen-grid">
+      {records.map((record) => (
+        <RecordCard
+          key={record.filename}
+          record={record}
+          type={type}
+          typeLabel={typeLabel}
+          linkTo={`/${type}/${record.filename}`}
+        />
+      ))}
     </div>
   );
 }
 
-export function RecordDashboard({ api, title }: { api: ReturnType<typeof createRecordApi>; title: string }) {
+const STAMP_COLOR_VAR: Record<string, string> = {
+  'stamp-sop': '--teal',
+  'stamp-inc': '--red',
+  'stamp-cap': '--gold',
+  'stamp-chg': '--navy-dim',
+  'stamp-trn': '--ink-dim',
+  'stamp-aud': '--gold',
+};
+
+const sectionHeading: CSSProperties = {
+  fontSize: '10px',
+  letterSpacing: '0.12em',
+  textTransform: 'uppercase',
+  fontWeight: 700,
+  marginBottom: '10px',
+};
+
+export function RecordDashboard({
+  api,
+  title,
+  type,
+}: {
+  api: ReturnType<typeof createRecordApi>;
+  title: string;
+  type: string;
+}) {
   const [records, setRecords] = useState<RecordSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [query, setQuery] = useState('');
 
   useEffect(() => {
     api
@@ -55,36 +69,71 @@ export function RecordDashboard({ api, title }: { api: ReturnType<typeof createR
 
   if (error) return <p role="alert">{error}</p>;
 
-  const controlled = records.filter((r) => r.status !== 'Obsolete');
-  const overdue = records.filter(isOverdue);
-  const inDraftOrReview = records.filter((r) => r.status === 'Draft' || r.status === 'In Review');
-  const obsolete = records.filter((r) => r.status === 'Obsolete');
+  const q = query.trim().toLowerCase();
+  const visible = q ? records.filter((r) => JSON.stringify(r).toLowerCase().includes(q)) : records;
+
+  const controlled = visible.filter((r) => r.status !== 'Obsolete');
+  const overdue = visible.filter(isOverdue);
+  const inDraftOrReview = visible.filter((r) => r.status === 'Draft' || r.status === 'In Review');
+  const obsolete = visible.filter((r) => r.status === 'Obsolete');
+  const stamp = stampClass[title] ?? DEFAULT_STAMP;
+  const colorVar = STAMP_COLOR_VAR[stamp] ?? '--gold';
 
   return (
     <div className="flex flex-col gap-8">
+      <div className="flex items-end gap-3 flex-wrap">
+        <label className="flex flex-col gap-1.5 flex-1" style={{ minWidth: 200 }}>
+          <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>
+            Search {title}s
+          </span>
+          <input
+            aria-label={`Search ${title}s`}
+            className="text-sm px-3 py-2 rounded-lg focus:outline-none font-mono border"
+            style={{ background: 'var(--paper-2)', borderColor: 'var(--rule)', color: 'var(--ink)' }}
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+          />
+        </label>
+        <Link to={`/${type}/new`} className="tab-sm">
+          + New {title}
+        </Link>
+      </div>
+      <StripChart
+        title={`${title} Register, 14-Day Trace`}
+        quip="every specimen, catalogued and dated"
+        series={[
+          {
+            label: title,
+            colorVar,
+            data: dailyCumulativeCounts(records.map((r) => r.id)),
+          },
+        ]}
+        readouts={[
+          { label: 'Total on file', value: String(records.length), direction: 'flat' },
+          { label: 'Overdue for review', value: String(overdue.length), direction: overdue.length > 0 ? 'up' : 'flat' },
+          { label: 'Draft / in review', value: String(inDraftOrReview.length), direction: 'flat' },
+          { label: 'Obsolete', value: String(obsolete.length), direction: 'down' },
+        ]}
+      />
       <section>
-        <h2 className="text-xs font-mono font-bold uppercase tracking-wide text-slate-400 mb-3">
+        <h2 style={{ ...sectionHeading, color: 'var(--ink-dim)' }}>
           All Controlled {title}s ({controlled.length})
         </h2>
-        <RecordTable records={controlled} />
+        <CardGrid records={controlled} type={type} typeLabel={title} />
       </section>
       <section>
-        <h2 className="text-xs font-mono font-bold uppercase tracking-wide text-red-400 mb-3">
-          Overdue for Review ({overdue.length})
-        </h2>
-        <RecordTable records={overdue} />
+        <h2 style={{ ...sectionHeading, color: 'var(--red)' }}>Overdue for Review ({overdue.length})</h2>
+        <CardGrid records={overdue} type={type} typeLabel={title} />
       </section>
       <section>
-        <h2 className="text-xs font-mono font-bold uppercase tracking-wide text-amber-400 mb-3">
-          In Draft / Review ({inDraftOrReview.length})
-        </h2>
-        <RecordTable records={inDraftOrReview} />
+        <h2 style={{ ...sectionHeading, color: 'var(--gold)' }}>In Draft / Review ({inDraftOrReview.length})</h2>
+        <CardGrid records={inDraftOrReview} type={type} typeLabel={title} />
       </section>
       <section>
-        <h2 className="text-xs font-mono font-bold uppercase tracking-wide text-slate-500 mb-3">
+        <h2 style={{ ...sectionHeading, color: 'var(--ink-dim)' }}>
           Obsolete {title}s ({obsolete.length})
         </h2>
-        <RecordTable records={obsolete} />
+        <CardGrid records={obsolete} type={type} typeLabel={title} />
       </section>
     </div>
   );

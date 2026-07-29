@@ -10,7 +10,8 @@ function listSops(sopDir) {
       const raw = fs.readFileSync(path.join(sopDir, f), 'utf8');
       const { data } = matter(raw);
       return { ...data, filename: f };
-    });
+    })
+    .filter((record) => Boolean(record.id));
 }
 
 function readSop(sopDir, filename) {

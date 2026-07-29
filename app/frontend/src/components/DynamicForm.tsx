@@ -8,8 +8,8 @@ interface Props {
   onChange: (key: string, value: unknown) => void;
 }
 
-const inputClasses =
-  'bg-slate-950 border border-slate-800 text-sm px-3 py-1.5 rounded-lg focus:outline-none focus:border-green-500 text-slate-200 font-mono';
+const inputClasses = 'text-sm px-3 py-1.5 rounded-lg focus:outline-none font-mono border';
+const inputStyle = { background: 'var(--paper-2)', borderColor: 'var(--rule)', color: 'var(--ink)' };
 
 function RelatedDocumentsPicker({
   labelText,
@@ -33,6 +33,7 @@ function RelatedDocumentsPicker({
       aria-label={labelText}
       multiple
       className={`${inputClasses} h-28`}
+      style={inputStyle}
       value={value}
       onChange={(e) => onChange(Array.from(e.target.selectedOptions).map((opt) => opt.value))}
     >
@@ -52,11 +53,12 @@ export function DynamicForm({ blueprint, values, onChange }: Props) {
         const labelText = `${field.label}${field.required ? ' *' : ''}`;
         return (
           <label key={field.key} className="flex flex-col gap-1.5">
-            <span className="text-xs font-mono font-bold uppercase tracking-wide text-slate-400">{labelText}</span>
+            <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>{labelText}</span>
             {field.type === 'select' ? (
               <select
                 aria-label={labelText}
                 className={inputClasses}
+                style={inputStyle}
                 value={(values[field.key] as string) ?? ''}
                 onChange={(e) => onChange(field.key, e.target.value)}
               >
@@ -77,6 +79,7 @@ export function DynamicForm({ blueprint, values, onChange }: Props) {
               <input
                 aria-label={labelText}
                 className={inputClasses}
+                style={inputStyle}
                 type="text"
                 value={((values[field.key] as string[]) ?? []).join(', ')}
                 onChange={(e) =>
@@ -90,6 +93,7 @@ export function DynamicForm({ blueprint, values, onChange }: Props) {
               <input
                 aria-label={labelText}
                 className={inputClasses}
+                style={inputStyle}
                 type={field.type === 'date' ? 'date' : 'text'}
                 value={(values[field.key] as string) ?? ''}
                 onChange={(e) => onChange(field.key, e.target.value)}
