@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const { createSessionToken } = require('../auth');
 const { COOKIE_NAME } = require('../middleware/requireAuth');
+const { createLoginRateLimit } = require('../middleware/loginRateLimit');
 
 function safeEquals(a, b) {
   const aBuf = Buffer.from(String(a));
@@ -12,14 +13,20 @@ function safeEquals(a, b) {
 
 function createAuthRouter(secret, expectedPassword) {
   const router = express.Router();
+  const loginRateLimit = createLoginRateLimit();
 
-  router.post('/auth/login', (req, res) => {
+  router.post('/auth/login', loginRateLimit, (req, res) => {
     const { password } = req.body;
     if (!expectedPassword || !password || !safeEquals(password, expectedPassword)) {
       return res.status(401).json({ error: 'invalid password' });
     }
     const token = createSessionToken(secret);
-    res.cookie(COOKIE_NAME, token, { httpOnly: true, sameSite: 'lax', maxAge: 1000 * 60 * 60 * 24 * 7 });
+    res.cookie(COOKIE_NAME, token, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 1000 * 60 * 60 * 24 * 7,
+    });
     res.json({ ok: true });
   });
 

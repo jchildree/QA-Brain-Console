@@ -3,11 +3,21 @@ const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
+const MAX_ATTACHMENT_BYTES = 25 * 1024 * 1024; // 25MB
+
 function createAttachmentsRouter(urlSlug, dir, provider) {
   const router = express.Router();
-  const upload = multer({ storage: multer.memoryStorage() });
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: MAX_ATTACHMENT_BYTES, files: 1 } });
 
-  router.post(`/${urlSlug}/:filename/attachments`, upload.single('evidence'), async (req, res) => {
+  router.post(`/${urlSlug}/:filename/attachments`, (req, res, next) => {
+    upload.single('evidence')(req, res, (err) => {
+      if (err instanceof multer.MulterError) {
+        return res.status(413).json({ error: `upload rejected: ${err.message}` });
+      }
+      if (err) return next(err);
+      next();
+    });
+  }, async (req, res) => {
     if (!req.file) {
       return res.status(400).json({ error: 'evidence file is required' });
     }
@@ -32,7 +42,8 @@ function createAttachmentsRouter(urlSlug, dir, provider) {
       note = 'Binary evidence attached; no automatic extraction for this file type';
     }
 
-    res.json({ attachmentPath: destPath, extracted, note });
+    const attachmentPath = path.join('attachments', recordBase, safeName);
+    res.json({ attachmentPath, extracted, note });
   });
 
   return router;

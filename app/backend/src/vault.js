@@ -27,26 +27,40 @@ function writeSop(sopDir, filename, frontmatter, body) {
   fs.writeFileSync(filePath, output, 'utf8');
 }
 
-function nextSequence(dir, prefix, dateStr) {
+function nextSequence(dir, prefix, dateStr, exclude = new Set()) {
   const idPattern = new RegExp(`^${prefix}-${dateStr}-(\\d{3})\\.md$`);
   const existing = fs.existsSync(dir) ? fs.readdirSync(dir) : [];
   const seqs = existing
     .map((f) => f.match(idPattern))
     .filter(Boolean)
-    .map((m) => Number(m[1]));
+    .map((m) => Number(m[1]))
+    .concat([...exclude]);
   const next = seqs.length > 0 ? Math.max(...seqs) + 1 : 1;
   return String(next).padStart(3, '0');
 }
 
+// ponytail: nextSequence + write isn't atomic across processes; retry on
+// EEXIST instead of a lock file so two concurrent creates can't collide on
+// the same id.
 function createRecord(dir, idPrefix, frontmatter, body) {
   fs.mkdirSync(dir, { recursive: true });
   const dateStr = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-  const seq = nextSequence(dir, idPrefix, dateStr);
-  const id = `${idPrefix}-${dateStr}-${seq}`;
-  const filename = `${id}.md`;
-  const fullFrontmatter = { ...frontmatter, id };
-  writeSop(dir, filename, fullFrontmatter, body);
-  return { filename, frontmatter: fullFrontmatter };
+  const tried = new Set();
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const seq = nextSequence(dir, idPrefix, dateStr, tried);
+    tried.add(Number(seq));
+    const id = `${idPrefix}-${dateStr}-${seq}`;
+    const filename = `${id}.md`;
+    const fullFrontmatter = { ...frontmatter, id };
+    const output = matter.stringify(body, fullFrontmatter);
+    try {
+      fs.writeFileSync(path.join(dir, filename), output, { encoding: 'utf8', flag: 'wx' });
+      return { filename, frontmatter: fullFrontmatter };
+    } catch (err) {
+      if (err.code !== 'EEXIST') throw err;
+    }
+  }
+  throw new Error(`could not allocate a unique id for ${idPrefix}-${dateStr} after 50 attempts`);
 }
 
 function moveRecord(fromDir, toDir, filename) {

@@ -19,7 +19,11 @@ const RECORD_TYPES = {
 
 const TRASH_DIR = vaultDir('To-Be-Deleted', process.env.VAULT_TRASH_DIR);
 
-const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-only-insecure-secret-change-me';
+const INSECURE_DEFAULT_SECRET = 'dev-only-insecure-secret-change-me';
+if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
+  throw new Error('SESSION_SECRET must be set in production -- refusing to start with the insecure default.');
+}
+const SESSION_SECRET = process.env.SESSION_SECRET || INSECURE_DEFAULT_SECRET;
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || null;
 
 module.exports = { SOP_DIR, RECORD_TYPES, TRASH_DIR, SESSION_SECRET, AUTH_PASSWORD };
