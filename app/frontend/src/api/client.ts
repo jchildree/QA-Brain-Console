@@ -140,6 +140,30 @@ export function createRecordApi(typeSlug: string) {
       if (!res.ok) throw new Error('Extraction failed');
       return res.json();
     },
+    async remove(filename: string): Promise<void> {
+      const res = await fetch(`${base}/${filename}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error(`Failed to delete ${typeSlug} record`);
+    },
+  };
+}
+
+export function createTrashApi() {
+  const base = `${BASE_URL}/trash`;
+
+  return {
+    async list(): Promise<RecordSummary[]> {
+      const res = await fetch(base, { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to load trash');
+      return res.json();
+    },
+    async restore(filename: string): Promise<void> {
+      const res = await fetch(`${base}/${filename}/restore`, { method: 'POST', credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to restore record');
+    },
+    async purge(filename: string): Promise<void> {
+      const res = await fetch(`${base}/${filename}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to permanently delete record');
+    },
   };
 }
 

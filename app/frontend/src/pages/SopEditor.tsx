@@ -5,5 +5,5 @@ import { sopBlueprint } from '../blueprint/sopBlueprint';
 const sopApi = createRecordApi('sops');
 
 export function SopEditor({ filename }: { filename: string }) {
-  return <RecordEditor api={sopApi} blueprint={sopBlueprint} filename={filename} />;
+  return <RecordEditor api={sopApi} blueprint={sopBlueprint} filename={filename} type="sop" />;
 }

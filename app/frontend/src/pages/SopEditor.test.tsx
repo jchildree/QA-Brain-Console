@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { SopEditor } from './SopEditor';
 import * as relatedRecords from '../api/relatedRecords';
 
@@ -19,7 +20,11 @@ describe('SopEditor', () => {
       }),
     });
 
-    render(<SopEditor filename="SOP-1.md" />);
+    render(
+      <MemoryRouter>
+        <SopEditor filename="SOP-1.md" />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/sops/SOP-1.md', { credentials: 'include' }));
     expect(await screen.findByLabelText('Owner *')).toHaveValue('Jane');
@@ -37,7 +42,11 @@ describe('SopEditor', () => {
     });
     (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
 
-    render(<SopEditor filename="SOP-1.md" />);
+    render(
+      <MemoryRouter>
+        <SopEditor filename="SOP-1.md" />
+      </MemoryRouter>
+    );
     await waitFor(() => expect(screen.getByLabelText('Owner *')).toHaveValue('Jane'));
 
     fireEvent.change(screen.getByLabelText('Owner *'), { target: { value: 'New Owner' } });

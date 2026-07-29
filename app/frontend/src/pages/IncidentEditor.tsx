@@ -5,5 +5,5 @@ import { incidentBlueprint } from '../blueprint/incidentBlueprint';
 const incidentApi = createRecordApi('incident');
 
 export function IncidentEditor({ filename }: { filename: string }) {
-  return <RecordEditor api={incidentApi} blueprint={incidentBlueprint} filename={filename} />;
+  return <RecordEditor api={incidentApi} blueprint={incidentBlueprint} filename={filename} type="incident" />;
 }

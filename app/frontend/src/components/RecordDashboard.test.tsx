@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import { RecordDashboard } from './RecordDashboard';
 
@@ -8,6 +8,7 @@ const FIXED_NOW = new Date('2026-07-15T00:00:00Z');
 beforeEach(() => {
   vi.useFakeTimers();
   vi.setSystemTime(FIXED_NOW);
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 
 function makeFakeApi(records: any[]) {
@@ -17,6 +18,7 @@ function makeFakeApi(records: any[]) {
     save: vi.fn(),
     create: vi.fn(),
     extract: vi.fn(),
+    remove: vi.fn().mockResolvedValue(undefined),
   } as any;
 }
 
@@ -51,5 +53,23 @@ describe('RecordDashboard', () => {
     );
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Failed to load cap records'));
+  });
+
+  it('removes a record from view after its delete button is clicked', async () => {
+    const api = makeFakeApi([
+      { id: 'CAP-1', status: 'Draft', version: '1.0', department: 'QA', review_date: '2027-01-01', owner: 'Jane', filename: 'CAP-1.md' },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <RecordDashboard api={api} title="CAP" type="cap" />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getAllByText('CAP-1').length).toBeGreaterThan(0));
+    fireEvent.click(screen.getAllByLabelText('Delete CAP-1')[0]);
+
+    await waitFor(() => expect(api.remove).toHaveBeenCalledWith('CAP-1.md'));
+    await waitFor(() => expect(screen.queryByText('CAP-1')).not.toBeInTheDocument());
   });
 });

@@ -22,14 +22,16 @@ effectiveness_status: Pending
 `;
 
 let tmpDir;
+let trashDir;
 let app;
 
 beforeEach(() => {
   tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'cap-vault-'));
+  trashDir = path.join(tmpDir, 'To-Be-Deleted');
   fs.writeFileSync(path.join(tmpDir, 'CAP-20260101-001.md'), FIXTURE, 'utf8');
   app = express();
   app.use(express.json());
-  app.use('/api', createRecordsRouter('cap', 'CAP', tmpDir));
+  app.use('/api', createRecordsRouter('cap', 'CAP', tmpDir, trashDir));
 });
 
 afterEach(() => fs.rmSync(tmpDir, { recursive: true, force: true }));
@@ -82,5 +84,24 @@ describe('POST /api/cap', () => {
     expect(res.status).toBe(201);
     expect(res.body.frontmatter.id).toMatch(new RegExp(`^CAP-${todayStr}-002$`));
     expect(res.body.filename).toMatch(new RegExp(`^CAP-${todayStr}-002\\.md$`));
+  });
+});
+
+describe('DELETE /api/cap/:filename', () => {
+  it('moves the record to the trash dir', async () => {
+    const res = await request(app).delete('/api/cap/CAP-20260101-001.md');
+    expect(res.status).toBe(200);
+    expect(fs.existsSync(path.join(tmpDir, 'CAP-20260101-001.md'))).toBe(false);
+    expect(fs.existsSync(path.join(trashDir, 'CAP-20260101-001.md'))).toBe(true);
+  });
+
+  it('returns 404 for a missing record', async () => {
+    const res = await request(app).delete('/api/cap/does-not-exist.md');
+    expect(res.status).toBe(404);
+  });
+
+  it('returns 400 for a path-traversal filename', async () => {
+    const res = await request(app).delete('/api/cap/..%2F..%2Fetc.md');
+    expect(res.status).toBe(400);
   });
 });

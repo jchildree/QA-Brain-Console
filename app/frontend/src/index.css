@@ -316,6 +316,18 @@ svg#chart {
   font-weight: 800;
   color: var(--ink);
 }
+.card-delete-btn {
+  font-size: 14px;
+  line-height: 1;
+  color: var(--ink-dim);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 2px 4px;
+}
+.card-delete-btn:hover {
+  color: var(--red);
+}
 .stamp {
   font-size: 10px;
   font-weight: 700;

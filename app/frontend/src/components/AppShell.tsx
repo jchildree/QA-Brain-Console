@@ -10,6 +10,7 @@ const NAV_LINKS: { label: string; to: string }[] = [
   { label: 'Audit', to: '/audit' },
   { label: 'Training', to: '/training' },
   { label: 'Evidence Library', to: '/evidence' },
+  { label: 'Trash', to: '/trash' },
   { label: 'Settings', to: '/settings' },
 ];
 

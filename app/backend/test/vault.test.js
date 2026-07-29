@@ -1,7 +1,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { listSops, readSop, writeSop, createRecord } = require('../src/vault');
+const { listSops, readSop, writeSop, createRecord, moveRecord, unlinkRecord } = require('../src/vault');
 
 const FIXTURE = `---
 id: SOP-20260101-001
@@ -94,5 +94,28 @@ describe('createRecord', () => {
     const { filename } = createRecord(tmpDir, 'CHG', { status: 'Draft' }, '# Body\n');
     const record = readSop(tmpDir, filename);
     expect(record.frontmatter.status).toBe('Draft');
+  });
+});
+
+describe('moveRecord', () => {
+  it('moves a file from one dir to another, creating the destination if needed', () => {
+    const trashDir = path.join(tmpDir, 'To-Be-Deleted');
+    moveRecord(tmpDir, trashDir, 'SOP-20260101-001.md');
+    expect(fs.existsSync(path.join(tmpDir, 'SOP-20260101-001.md'))).toBe(false);
+    expect(fs.existsSync(path.join(trashDir, 'SOP-20260101-001.md'))).toBe(true);
+  });
+
+  it('moves a file back from the destination to the original dir (restore)', () => {
+    const trashDir = path.join(tmpDir, 'To-Be-Deleted');
+    moveRecord(tmpDir, trashDir, 'SOP-20260101-001.md');
+    moveRecord(trashDir, tmpDir, 'SOP-20260101-001.md');
+    expect(fs.existsSync(path.join(tmpDir, 'SOP-20260101-001.md'))).toBe(true);
+  });
+});
+
+describe('unlinkRecord', () => {
+  it('permanently removes a file', () => {
+    unlinkRecord(tmpDir, 'SOP-20260101-001.md');
+    expect(fs.existsSync(path.join(tmpDir, 'SOP-20260101-001.md'))).toBe(false);
   });
 });

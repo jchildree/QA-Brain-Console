@@ -18,8 +18,8 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   if (status === 'checking') {
     return (
-      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
-        <p className="text-sm font-mono text-slate-500">Loading…</p>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'var(--paper)' }}>
+        <p className="text-sm font-mono" style={{ color: 'var(--ink-dim)' }}>Loading…</p>
       </div>
     );
   }

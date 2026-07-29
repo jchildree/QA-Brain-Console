@@ -49,4 +49,13 @@ function createRecord(dir, idPrefix, frontmatter, body) {
   return { filename, frontmatter: fullFrontmatter };
 }
 
-module.exports = { listSops, readSop, writeSop, createRecord };
+function moveRecord(fromDir, toDir, filename) {
+  fs.mkdirSync(toDir, { recursive: true });
+  fs.renameSync(path.join(fromDir, filename), path.join(toDir, filename));
+}
+
+function unlinkRecord(dir, filename) {
+  fs.unlinkSync(path.join(dir, filename));
+}
+
+module.exports = { listSops, readSop, writeSop, createRecord, moveRecord, unlinkRecord };

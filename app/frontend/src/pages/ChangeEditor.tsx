@@ -5,5 +5,5 @@ import { changeBlueprint } from '../blueprint/changeBlueprint';
 const changeApi = createRecordApi('change');
 
 export function ChangeEditor({ filename }: { filename: string }) {
-  return <RecordEditor api={changeApi} blueprint={changeBlueprint} filename={filename} />;
+  return <RecordEditor api={changeApi} blueprint={changeBlueprint} filename={filename} type="change" />;
 }

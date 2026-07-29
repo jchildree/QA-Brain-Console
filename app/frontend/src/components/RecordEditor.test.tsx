@@ -1,11 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { RecordEditor } from './RecordEditor';
 import { capBlueprint } from '../blueprint/capBlueprint';
 import * as relatedRecords from '../api/relatedRecords';
 
 beforeEach(() => {
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
+  vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 
 function makeFakeApi() {
@@ -19,20 +21,29 @@ function makeFakeApi() {
     save: vi.fn().mockResolvedValue(undefined),
     create: vi.fn(),
     extract: vi.fn(),
+    remove: vi.fn().mockResolvedValue(undefined),
   } as any;
 }
 
 describe('RecordEditor', () => {
   it('loads the record and pre-fills the form and body textarea', async () => {
     const api = makeFakeApi();
-    render(<RecordEditor api={api} blueprint={capBlueprint} filename="CAP-1.md" />);
+    render(
+      <MemoryRouter>
+        <RecordEditor api={api} blueprint={capBlueprint} filename="CAP-1.md" type="cap" />
+      </MemoryRouter>
+    );
     await waitFor(() => expect(screen.getByLabelText('Owner *')).toHaveValue('Jane'));
     expect(screen.getByLabelText('Body')).toHaveValue('# Existing body\n');
   });
 
   it('saves edited frontmatter and body on submit', async () => {
     const api = makeFakeApi();
-    render(<RecordEditor api={api} blueprint={capBlueprint} filename="CAP-1.md" />);
+    render(
+      <MemoryRouter>
+        <RecordEditor api={api} blueprint={capBlueprint} filename="CAP-1.md" type="cap" />
+      </MemoryRouter>
+    );
     await waitFor(() => expect(screen.getByLabelText('Owner *')).toHaveValue('Jane'));
 
     fireEvent.change(screen.getByLabelText('Owner *'), { target: { value: 'New Owner' } });
@@ -46,5 +57,19 @@ describe('RecordEditor', () => {
         '# Updated body\n'
       )
     );
+  });
+
+  it('deletes the record after confirmation', async () => {
+    const api = makeFakeApi();
+    render(
+      <MemoryRouter>
+        <RecordEditor api={api} blueprint={capBlueprint} filename="CAP-1.md" type="cap" />
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByLabelText('Owner *')).toHaveValue('Jane'));
+
+    fireEvent.click(screen.getByText('Delete'));
+
+    await waitFor(() => expect(api.remove).toHaveBeenCalledWith('CAP-1.md'));
   });
 });

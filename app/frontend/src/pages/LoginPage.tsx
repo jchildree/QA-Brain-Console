@@ -25,39 +25,32 @@ export function LoginPage({ onSuccess, error: initialError }: { onSuccess: () =>
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex items-center justify-center px-4">
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: 'var(--paper)' }}>
       <form
-        className="w-full max-w-sm rounded-xl border border-slate-800 bg-slate-900/60 backdrop-blur-md p-8 flex flex-col gap-5"
+        className="w-full max-w-sm rounded-xl p-8 flex flex-col gap-5"
+        style={{ border: '1px solid var(--rule)', background: 'var(--card)', boxShadow: 'var(--shadow)' }}
         onSubmit={handleSubmit}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-green-500/10 border border-green-500/20 flex items-center justify-center text-green-400 font-bold text-xl">
-            Q
-          </div>
-          <div>
-            <h1 className="text-sm font-semibold tracking-wide text-slate-200 uppercase">QA-Brain Console</h1>
-            <p className="text-xs text-slate-400 font-mono">Sign in to continue</p>
-          </div>
+        <div>
+          <h1 className="text-sm font-bold tracking-wide uppercase" style={{ color: 'var(--ink)' }}>QA-Brain Console</h1>
+          <p className="text-xs font-mono" style={{ color: 'var(--ink-dim)' }}>Sign in to continue</p>
         </div>
         <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-mono font-bold uppercase tracking-wide text-slate-400">Password</span>
+          <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>Password</span>
           <input
             aria-label="Password"
             type="password"
-            className="bg-slate-950 border border-slate-800 text-sm px-3 py-2 rounded-lg focus:outline-none focus:border-green-500 text-slate-200 font-mono"
+            className="text-sm px-3 py-2 rounded-lg focus:outline-none font-mono border"
+            style={{ background: 'var(--paper-2)', borderColor: 'var(--rule)', color: 'var(--ink)' }}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
           />
         </label>
-        <button
-          type="submit"
-          disabled={submitting || !password}
-          className="rounded-lg bg-green-500/10 text-green-400 border border-green-500/20 hover:bg-green-500/20 disabled:opacity-40 disabled:hover:bg-green-500/10 transition-colors px-4 py-2 text-sm font-bold"
-        >
+        <button type="submit" disabled={submitting || !password} className="accession-btn">
           Log in
         </button>
         {error && (
-          <p role="alert" className="text-xs text-red-400 font-mono">
+          <p role="alert" className="text-xs font-mono" style={{ color: 'var(--red)' }}>
             {error}
           </p>
         )}

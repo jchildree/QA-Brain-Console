@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { type createRecordApi } from '../api/client';
 import { DynamicForm } from './DynamicForm';
 import { type BlueprintField } from '../blueprint/sopBlueprint';
@@ -7,11 +8,14 @@ export function RecordEditor({
   api,
   blueprint,
   filename,
+  type,
 }: {
   api: ReturnType<typeof createRecordApi>;
   blueprint: BlueprintField[];
   filename: string;
+  type: string;
 }) {
+  const navigate = useNavigate();
   const [frontmatter, setFrontmatter] = useState<Record<string, unknown>>({});
   const [body, setBody] = useState('');
   const [loaded, setLoaded] = useState(false);
@@ -47,6 +51,12 @@ export function RecordEditor({
     }
   };
 
+  const handleDelete = async () => {
+    if (!confirm('Move this record to Trash?')) return;
+    await api.remove(filename);
+    navigate(`/${type}`);
+  };
+
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-xl border p-6" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
@@ -66,6 +76,9 @@ export function RecordEditor({
       <div className="flex items-center gap-4">
         <button type="button" onClick={handleSave} disabled={saving} className="accession-btn">
           Save
+        </button>
+        <button type="button" onClick={handleDelete} className="accession-btn" style={{ background: 'var(--red)' }}>
+          Delete
         </button>
         {saveError && (
           <p role="alert" className="text-xs font-mono" style={{ color: 'var(--red)' }}>

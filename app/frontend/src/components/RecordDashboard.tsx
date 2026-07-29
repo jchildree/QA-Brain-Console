@@ -11,7 +11,17 @@ export function isOverdue(record: RecordSummary): boolean {
   return record.status === 'Approved' && new Date(record.review_date) < new Date();
 }
 
-function CardGrid({ records, type, typeLabel }: { records: RecordSummary[]; type: string; typeLabel: string }) {
+function CardGrid({
+  records,
+  type,
+  typeLabel,
+  onDelete,
+}: {
+  records: RecordSummary[];
+  type: string;
+  typeLabel: string;
+  onDelete: (filename: string) => void;
+}) {
   if (records.length === 0) {
     return <p className="text-sm px-1 py-3" style={{ color: 'var(--ink-dim)' }}>No records.</p>;
   }
@@ -24,6 +34,7 @@ function CardGrid({ records, type, typeLabel }: { records: RecordSummary[]; type
           type={type}
           typeLabel={typeLabel}
           linkTo={`/${type}/${record.filename}`}
+          onDelete={onDelete}
         />
       ))}
     </div>
@@ -66,6 +77,12 @@ export function RecordDashboard({
       .then(setRecords)
       .catch((err: Error) => setError(err.message));
   }, [api]);
+
+  const handleDelete = async (filename: string) => {
+    if (!confirm('Move this record to Trash?')) return;
+    await api.remove(filename);
+    setRecords((prev) => prev.filter((r) => r.filename !== filename));
+  };
 
   if (error) return <p role="alert">{error}</p>;
 
@@ -119,21 +136,21 @@ export function RecordDashboard({
         <h2 style={{ ...sectionHeading, color: 'var(--ink-dim)' }}>
           All Controlled {title}s ({controlled.length})
         </h2>
-        <CardGrid records={controlled} type={type} typeLabel={title} />
+        <CardGrid records={controlled} type={type} typeLabel={title} onDelete={handleDelete} />
       </section>
       <section>
         <h2 style={{ ...sectionHeading, color: 'var(--red)' }}>Overdue for Review ({overdue.length})</h2>
-        <CardGrid records={overdue} type={type} typeLabel={title} />
+        <CardGrid records={overdue} type={type} typeLabel={title} onDelete={handleDelete} />
       </section>
       <section>
         <h2 style={{ ...sectionHeading, color: 'var(--gold)' }}>In Draft / Review ({inDraftOrReview.length})</h2>
-        <CardGrid records={inDraftOrReview} type={type} typeLabel={title} />
+        <CardGrid records={inDraftOrReview} type={type} typeLabel={title} onDelete={handleDelete} />
       </section>
       <section>
         <h2 style={{ ...sectionHeading, color: 'var(--ink-dim)' }}>
           Obsolete {title}s ({obsolete.length})
         </h2>
-        <CardGrid records={obsolete} type={type} typeLabel={title} />
+        <CardGrid records={obsolete} type={type} typeLabel={title} onDelete={handleDelete} />
       </section>
     </div>
   );

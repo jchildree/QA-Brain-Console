@@ -17,7 +17,9 @@ const RECORD_TYPES = {
   training: { idPrefix: 'TRN', dir: vaultDir('TRAINING', process.env.VAULT_TRAINING_DIR), urlSlug: 'training' },
 };
 
+const TRASH_DIR = vaultDir('To-Be-Deleted', process.env.VAULT_TRASH_DIR);
+
 const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-only-insecure-secret-change-me';
 const AUTH_PASSWORD = process.env.AUTH_PASSWORD || null;
 
-module.exports = { SOP_DIR, RECORD_TYPES, SESSION_SECRET, AUTH_PASSWORD };
+module.exports = { SOP_DIR, RECORD_TYPES, TRASH_DIR, SESSION_SECRET, AUTH_PASSWORD };

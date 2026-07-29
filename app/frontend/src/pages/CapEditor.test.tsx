@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { CapEditor } from './CapEditor';
 import * as relatedRecords from '../api/relatedRecords';
 
@@ -19,7 +20,11 @@ describe('CapEditor', () => {
       }),
     });
 
-    render(<CapEditor filename="CAP-1.md" />);
+    render(
+      <MemoryRouter>
+        <CapEditor filename="CAP-1.md" />
+      </MemoryRouter>
+    );
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/cap/CAP-1.md', { credentials: 'include' }));
     expect(await screen.findByLabelText('Root Cause')).toHaveValue('Root note');
@@ -36,7 +41,11 @@ describe('CapEditor', () => {
     });
     (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
 
-    render(<CapEditor filename="CAP-1.md" />);
+    render(
+      <MemoryRouter>
+        <CapEditor filename="CAP-1.md" />
+      </MemoryRouter>
+    );
     await waitFor(() => expect(screen.getByLabelText('Owner *')).toHaveValue('Jane'));
 
     fireEvent.change(screen.getByLabelText('Root Cause'), { target: { value: 'New cause' } });

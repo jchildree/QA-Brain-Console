@@ -25,11 +25,13 @@ export function RecordCard({
   type,
   typeLabel,
   linkTo,
+  onDelete,
 }: {
   record: RecordSummary;
   type: string;
   typeLabel: string;
   linkTo: string;
+  onDelete?: (filename: string) => void;
 }) {
   const stamp = stampClass[typeLabel] ?? DEFAULT_STAMP;
   const desc = descriptionFor(type, record);
@@ -39,6 +41,20 @@ export function RecordCard({
       <div className="card-head">
         <span className="card-id">{record.id}</span>
         <span className={`stamp ${stamp}`}>{record.status}</span>
+        {onDelete && (
+          <button
+            type="button"
+            aria-label={`Delete ${record.id}`}
+            className="card-delete-btn"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete(record.filename);
+            }}
+          >
+            &times;
+          </button>
+        )}
       </div>
       <span className="card-type">{typeLabel}</span>
       {desc && <p className="card-desc">{desc}</p>}

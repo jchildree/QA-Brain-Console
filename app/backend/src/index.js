@@ -2,13 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const { RECORD_TYPES, SESSION_SECRET, AUTH_PASSWORD } = require('./config');
+const { RECORD_TYPES, TRASH_DIR, SESSION_SECRET, AUTH_PASSWORD } = require('./config');
 const { getProvider } = require('./providers');
 const { createRecordsRouter } = require('./routes/records');
 const { createIntakeRouter } = require('./routes/intake');
 const { createAttachmentsRouter } = require('./routes/attachments');
 const { createSearchRouter } = require('./routes/search');
 const { createEvidenceRouter } = require('./routes/evidence');
+const { createTrashRouter } = require('./routes/trash');
 const { createAuthRouter } = require('./routes/auth');
 const { createRequireAuth } = require('./middleware/requireAuth');
 
@@ -29,7 +30,7 @@ app.use('/api', createIntakeRouter(provider));
 
 for (const [slug, { idPrefix, dir, urlSlug }] of Object.entries(RECORD_TYPES)) {
   app.use(`/api/${urlSlug}`, requireAuth);
-  app.use('/api', createRecordsRouter(urlSlug, idPrefix, dir));
+  app.use('/api', createRecordsRouter(urlSlug, idPrefix, dir, TRASH_DIR));
   app.use('/api', createAttachmentsRouter(urlSlug, dir, provider));
 }
 
@@ -38,6 +39,9 @@ app.use('/api', createSearchRouter(RECORD_TYPES));
 
 app.use('/api/evidence', requireAuth);
 app.use('/api', createEvidenceRouter(RECORD_TYPES));
+
+app.use('/api/trash', requireAuth);
+app.use('/api', createTrashRouter(RECORD_TYPES, TRASH_DIR));
 
 if (require.main === module) {
   const PORT = process.env.PORT || 4000;
