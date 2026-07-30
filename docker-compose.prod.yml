@@ -1,0 +1,28 @@
+services:
+  backend:
+    restart: unless-stopped
+    # Only Caddy should be internet/LAN-facing; the base file's published
+    # port is for talking to the backend directly in local dev.
+    ports: !override []
+
+  frontend:
+    build:
+      args:
+        # Same origin as the browser sees the app at -- Caddy proxies /api/*
+        # to the backend, so the frontend doesn't need an absolute URL baked in.
+        VITE_API_BASE_URL: /api
+    restart: unless-stopped
+    ports: !override []
+
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on:
+      - backend
+      - frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./deploy/certs:/etc/caddy/certs:ro

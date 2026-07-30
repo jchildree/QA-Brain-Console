@@ -58,9 +58,28 @@ CI (`.github/workflows/ci.yml`) runs all three on every push and PR to `main`/`m
 - Auth is per-user: named accounts with scrypt-hashed passwords in `app/backend/data/users.json` (gitignored, never commit it), rate-limited login, HMAC-signed session cookie carrying the username. Manage accounts with `node scripts/create-user.js <username> <password>` (also resets an existing user's password). Records get stamped with `created_by`/`updated_by` from the session, which is the actual audit trail a real QMS needs. There's no self-service signup or roles yet - every account has the same access, and adding one is a shell command, not a UI flow. Fine for a small trusted team; revisit if that stops being true.
 - Vault data is flat Markdown on disk. Back it up like you mean it (Obsidian Git or equivalent). If your only copy of an incident report lives on one laptop, that is itself an incident.
 
+## Deploying (internal server, no public DNS)
+
+`docker-compose.prod.yml` layers a [Caddy](https://caddyserver.com/) reverse proxy on top of the base compose file: Caddy terminates TLS on `:443` and is the only container with a published port, proxying `/api/*` to the backend and everything else to the frontend. Backend and frontend become same-origin behind Caddy, so the frontend is built calling relative `/api` instead of an absolute URL baked in at build time.
+
+1. Get a cert onto the box. No public domain here, so no Let's Encrypt -- either your company's internal CA issues one, or generate a self-signed one to get started:
+   ```bash
+   openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
+     -keyout deploy/certs/site.key -out deploy/certs/site.crt \
+     -subj "/CN=qa-brain.internal"
+   ```
+   Drop `site.crt` / `site.key` in `deploy/certs/` (gitignored -- never commit real keys). Clients trusting a self-signed cert will need to import it or click through the browser warning; an internal CA cert avoids that.
+2. Set `app/backend/.env` for production -- `NODE_ENV=production`, a real `SESSION_SECRET`, and `FRONTEND_ORIGIN` set to the exact HTTPS origin browsers will hit (e.g. `https://qa-brain.internal`), not `localhost`.
+3. Bring it up:
+   ```bash
+   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+   ```
+4. Create the first login: `docker compose exec backend node scripts/create-user.js <username> <password>`.
+
+`docker-compose.prod.yml` also adds `restart: unless-stopped` to every service, so the stack survives a host reboot without a babysitter.
+
 ## Known gaps before this is fully "release it and walk away" ready
 
-- No deployment target configured yet beyond "a machine that can run Docker Compose"
 - `react-router-dom` has an open high-severity advisory (RSC-mode server-action CSRF bypass, GHSA-qwww-vcr4-c8h2, affects >=7.12.0 <8.3.0 -- we're on 7.18.1, which is caught in that range). **Confirmed not exploitable**: the app uses plain `<BrowserRouter>` client-side routing, no `react-router/rsc` import, no server actions anywhere in the codebase for the CSRF bypass to act on. No patched release exists yet (7.18.2 is latest, still in the vulnerable range; no 8.x published) -- `npm audit fix` would only offer a downgrade to 7.11.0, which is a real regression for zero security benefit here. Leaving the dependency as-is; re-check when 8.3.0+ ships.
 
 ## A note on tone

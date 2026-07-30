@@ -1,0 +1,21 @@
+{
+	# Internal-only deployment: no ACME, cert/key are supplied by you (self-signed
+	# or your company's internal CA), not issued by Let's Encrypt.
+	auto_https off
+}
+
+:443 {
+	tls /etc/caddy/certs/site.crt /etc/caddy/certs/site.key
+
+	handle /api/* {
+		reverse_proxy backend:4000
+	}
+
+	handle {
+		reverse_proxy frontend:80
+	}
+}
+
+:80 {
+	redir https://{host}{uri} permanent
+}
