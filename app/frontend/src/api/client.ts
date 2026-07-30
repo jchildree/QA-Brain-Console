@@ -18,6 +18,21 @@ export async function extractFromText(rawText: string): Promise<Record<string, u
   return res.json();
 }
 
+export interface SearchResult {
+  type: string;
+  urlSlug: string;
+  filename: string;
+  id: string;
+  status?: string;
+  [key: string]: unknown;
+}
+
+export async function search(q: string): Promise<SearchResult[]> {
+  const res = await fetch(`${BASE_URL}/search?q=${encodeURIComponent(q)}`, { credentials: 'include' });
+  if (!res.ok) throw new Error('Search failed');
+  return res.json();
+}
+
 export async function uploadAttachment(filename: string, file: File): Promise<{ attachmentPath: string; extracted: Record<string, unknown> | null; note: string | null }> {
   const formData = new FormData();
   formData.append('evidence', file);

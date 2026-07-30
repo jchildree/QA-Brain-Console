@@ -6,6 +6,7 @@ const usersDir = fs.mkdtempSync(path.join(os.tmpdir(), 'qa-brain-users-'));
 process.env.AUTH_USERS_FILE = path.join(usersDir, 'users.json');
 process.env.SESSION_SECRET = 'integration-test-secret';
 process.env.VAULT_SOP_DIR = require('os').tmpdir();
+process.env.VAULT_NOTES_DIR = require('os').tmpdir();
 
 const request = require('supertest');
 const { upsertUser } = require('../src/users');
@@ -29,6 +30,13 @@ describe('index.js wiring', () => {
     const agent = request.agent(app);
     await agent.post('/api/auth/login').send({ username: 'integration-test-user', password: 'integration-test-password' });
     const res = await agent.get('/api/sops');
+    expect(res.status).toBe(200);
+  });
+
+  it('allows /api/notes after logging in', async () => {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ username: 'integration-test-user', password: 'integration-test-password' });
+    const res = await agent.get('/api/notes');
     expect(res.status).toBe(200);
   });
 });

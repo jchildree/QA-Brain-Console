@@ -4,6 +4,8 @@ A quality-management console for humans who would rather not manage quality in a
 
 QA-Brain tracks SOPs, CAPs, Incidents, Changes, Audits, and Training records - with cross-linking, search, an evidence library, and a trash folder for the records you'll definitely want back in three weeks. It is a working application with tests, not a slide deck about one.
 
+It also has a Notes area for free-form drafting and general note-taking that doesn't need to be a controlled record - meeting notes, scratch thinking, whatever. Notes cross-link to records the same way records link to each other, and any note can be promoted into a SOP/CAP/Incident/Change/Audit/Training draft in one click, landing you in the same AI-assisted intake every other record type already uses. Notes are not part of the compliance lifecycle below - see "Notes" further down.
+
 **This vault is a drafting and analysis layer, not the system of record.** The real QMS of record is Intellect (EQMS); approved records get pushed there. Nothing in this repo is the final, authoritative documentation of a live quality system - it's where the thinking happens before that.
 
 ## What's actually in here
@@ -12,10 +14,14 @@ QA-Brain tracks SOPs, CAPs, Incidents, Changes, Audits, and Training records - w
 app/
   backend/    Express API, session auth, file-backed vault storage, AI-assisted intake
   frontend/   React + Vite + TypeScript console UI
-qa-brain/     The vault itself - SOP/CAP/INCIDENT/CHANGE/AUDIT/TRAINING records + Dataview dashboards
+qa-brain/     The vault itself - SOP/CAP/INCIDENT/CHANGE/AUDIT/TRAINING/Notes records + Dataview dashboards
 ```
 
 Records are Markdown files with YAML frontmatter, one per document, filed under a strict ID scheme (`SOP-20260528-001`) and a four-state lifecycle (`Draft -> In Review -> Approved -> Obsolete`). No, you may not invent a fifth state. The Dataview dashboards will simply pretend your record doesn't exist, and they will be right to do so.
+
+### Notes
+
+Notes (`NOTE-20260528-001`, filed under `qa-brain/Notes/`) are exempt from that lifecycle on purpose - no status, no owner, no review date. They're a scratch space: title, an optional folder field for grouping, tags, and a body. Notes can link to records (and other notes) via the same Related Documents field every record type has, and any record or note with links pointing at it shows them in a "Referenced By" panel - that's the closest thing this app has to an Obsidian backlinks pane. "Promote to..." on a note carries its body into the normal intake+AI-extraction flow for whichever record type you pick.
 
 ## Running it locally
 

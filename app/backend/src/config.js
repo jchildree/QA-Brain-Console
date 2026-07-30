@@ -15,6 +15,7 @@ const RECORD_TYPES = {
   change: { idPrefix: 'CHG', dir: vaultDir('CHANGE', process.env.VAULT_CHANGE_DIR), urlSlug: 'change' },
   audit: { idPrefix: 'AUD', dir: vaultDir('AUDIT', process.env.VAULT_AUDIT_DIR), urlSlug: 'audit' },
   training: { idPrefix: 'TRN', dir: vaultDir('TRAINING', process.env.VAULT_TRAINING_DIR), urlSlug: 'training' },
+  notes: { idPrefix: 'NOTE', dir: vaultDir('Notes', process.env.VAULT_NOTES_DIR), urlSlug: 'notes' },
 };
 
 const TRASH_DIR = vaultDir('To-Be-Deleted', process.env.VAULT_TRASH_DIR);

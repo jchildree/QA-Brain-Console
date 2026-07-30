@@ -1,19 +1,22 @@
-import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 import { SaveConflictError, type createRecordApi } from '../api/client';
 import { DynamicForm } from './DynamicForm';
 import { type BlueprintField } from '../blueprint/sopBlueprint';
+import { findBacklinks, type Backlink } from '../api/backlinks';
 
 export function RecordEditor({
   api,
   blueprint,
   filename,
   type,
+  renderExtraActions,
 }: {
   api: ReturnType<typeof createRecordApi>;
   blueprint: BlueprintField[];
   filename: string;
   type: string;
+  renderExtraActions?: (frontmatter: Record<string, unknown>, body: string) => ReactNode;
 }) {
   const navigate = useNavigate();
   const [frontmatter, setFrontmatter] = useState<Record<string, unknown>>({});
@@ -24,6 +27,7 @@ export function RecordEditor({
   const [saveError, setSaveError] = useState<string | null>(null);
   const [conflict, setConflict] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [backlinks, setBacklinks] = useState<Backlink[]>([]);
 
   const load = () => {
     setLoaded(false);
@@ -34,6 +38,10 @@ export function RecordEditor({
       setLoaded(true);
       setConflict(false);
       setSaveError(null);
+      const id = record.frontmatter.id;
+      if (typeof id === 'string') {
+        findBacklinks(id).then(setBacklinks).catch(() => setBacklinks([]));
+      }
     });
   };
 
@@ -93,6 +101,7 @@ export function RecordEditor({
         <button type="button" onClick={handleDelete} className="accession-btn" style={{ background: 'var(--red)' }}>
           Delete
         </button>
+        {renderExtraActions?.(frontmatter, body)}
         {saveError && !conflict && (
           <p role="alert" className="text-xs font-mono" style={{ color: 'var(--red)' }}>
             {saveError}
@@ -112,6 +121,20 @@ export function RecordEditor({
           </p>
         )}
       </div>
+      {backlinks.length > 0 && (
+        <div className="rounded-xl border p-6" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
+          <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>Referenced By</span>
+          <ul className="flex flex-col gap-1 mt-2">
+            {backlinks.map((b) => (
+              <li key={`${b.type}-${b.filename}`}>
+                <Link to={`/${b.type}/${b.filename}`} className="text-sm font-mono underline">
+                  {b.type.toUpperCase()}: {b.id}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
     </div>
   );
 }

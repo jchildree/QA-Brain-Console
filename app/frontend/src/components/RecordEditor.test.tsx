@@ -4,9 +4,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { RecordEditor } from './RecordEditor';
 import { capBlueprint } from '../blueprint/capBlueprint';
 import * as relatedRecords from '../api/relatedRecords';
+import * as backlinksApi from '../api/backlinks';
 
 beforeEach(() => {
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
+  vi.spyOn(backlinksApi, 'findBacklinks').mockResolvedValue([]);
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 
@@ -15,7 +17,7 @@ function makeFakeApi() {
     list: vi.fn(),
     get: vi.fn().mockResolvedValue({
       filename: 'CAP-1.md',
-      frontmatter: { status: 'Draft', version: '1.0', owner: 'Jane', department: 'QA', review_date: '2026-01-01', tags: [], root_cause: '', effectiveness_status: 'Pending' },
+      frontmatter: { id: 'CAP-1', status: 'Draft', version: '1.0', owner: 'Jane', department: 'QA', review_date: '2026-01-01', tags: [], root_cause: '', effectiveness_status: 'Pending' },
       body: '# Existing body\n',
       hash: 'hash-1',
     }),
@@ -94,5 +96,33 @@ describe('RecordEditor', () => {
     fireEvent.click(screen.getByText('Delete'));
 
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith('CAP-1.md'));
+  });
+
+  it('renders extra actions passed via renderExtraActions', async () => {
+    const api = makeFakeApi();
+    render(
+      <MemoryRouter>
+        <RecordEditor
+          api={api}
+          blueprint={capBlueprint}
+          filename="CAP-1.md"
+          type="cap"
+          renderExtraActions={(frontmatter) => <button type="button">Promote {String(frontmatter.id)}</button>}
+        />
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByText('Promote CAP-1')).toBeInTheDocument());
+  });
+
+  it('shows a Referenced By panel when other records link to this one', async () => {
+    vi.spyOn(backlinksApi, 'findBacklinks').mockResolvedValue([{ type: 'sop', id: 'SOP-1', filename: 'SOP-1.md' }]);
+    const api = makeFakeApi();
+    render(
+      <MemoryRouter>
+        <RecordEditor api={api} blueprint={capBlueprint} filename="CAP-1.md" type="cap" />
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByText('Referenced By')).toBeInTheDocument());
+    expect(screen.getByRole('link', { name: 'SOP: SOP-1' })).toHaveAttribute('href', '/sop/SOP-1.md');
   });
 });

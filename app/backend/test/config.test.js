@@ -15,6 +15,7 @@ describe('RECORD_TYPES', () => {
     expect(RECORD_TYPES.change).toMatchObject({ idPrefix: 'CHG' });
     expect(RECORD_TYPES.audit).toMatchObject({ idPrefix: 'AUD' });
     expect(RECORD_TYPES.training).toMatchObject({ idPrefix: 'TRN' });
+    expect(RECORD_TYPES.notes).toMatchObject({ idPrefix: 'NOTE' });
     expect(RECORD_TYPES.cap.dir.endsWith(require('path').join('qa-brain', 'CAP'))).toBe(true);
   });
 });

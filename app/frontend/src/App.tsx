@@ -24,6 +24,10 @@ import { TrainingIntake } from './pages/TrainingIntake';
 import { SettingsPage } from './pages/SettingsPage';
 import { EvidenceLibraryPage } from './pages/EvidenceLibraryPage';
 import { TrashPage } from './pages/TrashPage';
+import { NotesDashboard } from './pages/NotesDashboard';
+import { NoteEditor } from './pages/NoteEditor';
+import { NoteIntake } from './pages/NoteIntake';
+import { SearchPage } from './pages/SearchPage';
 import { OnboardingProvider } from './context/OnboardingContext';
 import { OnboardingModal } from './components/OnboardingModal';
 
@@ -63,6 +67,12 @@ function TrainingEditorRoute() {
   return <TrainingEditor filename={filename} />;
 }
 
+function NoteEditorRoute() {
+  const { filename } = useParams<{ filename: string }>();
+  if (!filename) return null;
+  return <NoteEditor filename={filename} />;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
@@ -90,6 +100,10 @@ export default function App() {
                 <Route path="/training" element={<TrainingDashboard />} />
                 <Route path="/training/new" element={<TrainingIntake />} />
                 <Route path="/training/:filename" element={<TrainingEditorRoute />} />
+                <Route path="/notes" element={<NotesDashboard />} />
+                <Route path="/notes/new" element={<NoteIntake />} />
+                <Route path="/notes/:filename" element={<NoteEditorRoute />} />
+                <Route path="/search" element={<SearchPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/evidence" element={<EvidenceLibraryPage />} />
                 <Route path="/trash" element={<TrashPage />} />
