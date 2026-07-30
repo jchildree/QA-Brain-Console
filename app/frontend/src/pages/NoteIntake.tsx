@@ -1,16 +1,22 @@
 import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { createRecordApi } from '../api/client';
-import { notesBlueprint } from '../blueprint/notesBlueprint';
+import { notesBlueprint, notesBlueprintAdmin } from '../blueprint/notesBlueprint';
 import { DynamicForm } from '../components/DynamicForm';
+import { useAuth } from '../context/AuthContext';
 
 const notesApi = createRecordApi('notes');
 
 export function NoteIntake() {
   const navigate = useNavigate();
   const location = useLocation();
-  const [fields, setFields] = useState<Record<string, unknown>>({});
-  const [body, setBody] = useState((location.state as { rawText?: string } | null)?.rawText ?? '');
+  const { isAdmin } = useAuth();
+  const navState = location.state as { rawText?: string; folder?: string; title?: string } | null;
+  const [fields, setFields] = useState<Record<string, unknown>>({
+    ...(navState?.folder ? { folder: navState.folder } : {}),
+    ...(navState?.title ? { title: navState.title } : {}),
+  });
+  const [body, setBody] = useState(navState?.rawText ?? '');
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -34,7 +40,7 @@ export function NoteIntake() {
   return (
     <div className="flex flex-col gap-6">
       <div className="rounded-xl border p-6" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
-        <DynamicForm blueprint={notesBlueprint} values={fields} onChange={handleChange} />
+        <DynamicForm blueprint={isAdmin ? notesBlueprintAdmin : notesBlueprint} values={fields} onChange={handleChange} />
       </div>
       <label className="flex flex-col gap-1.5">
         <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>Body</span>

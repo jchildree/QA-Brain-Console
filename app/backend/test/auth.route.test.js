@@ -6,7 +6,7 @@ const cookieParser = require('cookie-parser');
 const request = require('supertest');
 const { createAuthRouter } = require('../src/routes/auth');
 const { createRequireAuth } = require('../src/middleware/requireAuth');
-const { upsertUser } = require('../src/users');
+const { upsertUser, createPendingUser } = require('../src/users');
 
 const SECRET = 'test-secret';
 const USERNAME = 'alice';
@@ -26,7 +26,7 @@ function makeApp() {
   app.use(express.json());
   app.use(cookieParser());
   app.use('/api', createAuthRouter(SECRET, usersFile));
-  app.get('/api/protected', createRequireAuth(SECRET), (req, res) => res.json({ ok: true, user: req.user }));
+  app.get('/api/protected', createRequireAuth(SECRET, usersFile), (req, res) => res.json({ ok: true, user: req.user }));
   return app;
 }
 
@@ -69,13 +69,43 @@ describe('GET /api/auth/me', () => {
     expect(res.status).toBe(401);
   });
 
-  it('returns 200 with the username when logged in', async () => {
+  it('returns 200 with the username and role when logged in', async () => {
     const app = makeApp();
     const agent = request.agent(app);
     await agent.post('/api/auth/login').send({ username: USERNAME, password: PASSWORD });
     const res = await agent.get('/api/auth/me');
     expect(res.status).toBe(200);
     expect(res.body.username).toBe(USERNAME);
+    expect(res.body.role).toBe('user');
+  });
+});
+
+describe('POST /api/auth/setup-password', () => {
+  it('sets the password, logs the user in, and returns their role', async () => {
+    const token = createPendingUser(usersFile, 'newbie', 'admin');
+    const app = makeApp();
+    const agent = request.agent(app);
+    const res = await agent.post('/api/auth/setup-password').send({ username: 'newbie', token, password: 'fresh-password' });
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ ok: true, username: 'newbie', role: 'admin' });
+    expect(res.headers['set-cookie'][0]).toMatch(/qa_session=/);
+
+    const me = await agent.get('/api/auth/me');
+    expect(me.status).toBe(200);
+    expect(me.body.username).toBe('newbie');
+  });
+
+  it('returns 400 for a wrong token', async () => {
+    createPendingUser(usersFile, 'newbie', 'user');
+    const res = await request(makeApp()).post('/api/auth/setup-password').send({ username: 'newbie', token: 'wrong', password: 'x' });
+    expect(res.status).toBe(400);
+  });
+
+  it('returns 400 for an already-set-up account', async () => {
+    const res = await request(makeApp())
+      .post('/api/auth/setup-password')
+      .send({ username: USERNAME, token: 'anything', password: 'x' });
+    expect(res.status).toBe(400);
   });
 });
 

@@ -27,7 +27,7 @@ import { TrashPage } from './pages/TrashPage';
 import { NotesDashboard } from './pages/NotesDashboard';
 import { NoteEditor } from './pages/NoteEditor';
 import { NoteIntake } from './pages/NoteIntake';
-import { SearchPage } from './pages/SearchPage';
+import { AdminUsersPage } from './pages/AdminUsersPage';
 import { OnboardingProvider } from './context/OnboardingContext';
 import { OnboardingModal } from './components/OnboardingModal';
 
@@ -103,7 +103,7 @@ export default function App() {
                 <Route path="/notes" element={<NotesDashboard />} />
                 <Route path="/notes/new" element={<NoteIntake />} />
                 <Route path="/notes/:filename" element={<NoteEditorRoute />} />
-                <Route path="/search" element={<SearchPage />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/evidence" element={<EvidenceLibraryPage />} />
                 <Route path="/trash" element={<TrashPage />} />

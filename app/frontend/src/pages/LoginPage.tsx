@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { login } from '../api/client';
+import { login, type AuthedUser } from '../api/client';
 
-export function LoginPage({ onSuccess, error: initialError }: { onSuccess: (username: string) => void; error?: string | null }) {
+export function LoginPage({ onSuccess, error: initialError }: { onSuccess: (user: AuthedUser) => void; error?: string | null }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(initialError ?? null);
@@ -12,9 +12,9 @@ export function LoginPage({ onSuccess, error: initialError }: { onSuccess: (user
     setSubmitting(true);
     setError(null);
     try {
-      const loggedInUsername = await login(username, password);
-      if (loggedInUsername) {
-        onSuccess(loggedInUsername);
+      const user = await login(username, password);
+      if (user) {
+        onSuccess(user);
       } else {
         setError('Incorrect username or password');
       }

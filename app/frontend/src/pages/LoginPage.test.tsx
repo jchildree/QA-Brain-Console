@@ -4,8 +4,8 @@ import { LoginPage } from './LoginPage';
 import * as client from '../api/client';
 
 describe('LoginPage', () => {
-  it('calls onSuccess with the username after a successful login', async () => {
-    vi.spyOn(client, 'login').mockResolvedValue('alice');
+  it('calls onSuccess with the username and role after a successful login', async () => {
+    vi.spyOn(client, 'login').mockResolvedValue({ username: 'alice', role: 'user' });
     const onSuccess = vi.fn();
     render(<LoginPage onSuccess={onSuccess} />);
 
@@ -13,7 +13,7 @@ describe('LoginPage', () => {
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'secret' } });
     fireEvent.click(screen.getByText('Log in'));
 
-    await waitFor(() => expect(onSuccess).toHaveBeenCalledWith('alice'));
+    await waitFor(() => expect(onSuccess).toHaveBeenCalledWith({ username: 'alice', role: 'user' }));
   });
 
   it('shows an error and does not call onSuccess on a failed login', async () => {

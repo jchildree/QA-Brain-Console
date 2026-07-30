@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SaveConflictError, extractFromText, login, checkSession, logout, createRecordApi } from './client';
+import { SaveConflictError, extractFromText, login, checkSession, logout, createRecordApi, setupPassword, adminApi, listActiveUsernames } from './client';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
@@ -20,8 +20,8 @@ describe('extractFromText', () => {
 });
 
 describe('login', () => {
-  it('POSTs the username and password with credentials included, returning the username', async () => {
-    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, username: 'alice' }) });
+  it('POSTs the username and password with credentials included, returning the username and role', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, username: 'alice', role: 'admin' }) });
     const result = await login('alice', 'secret');
     expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/auth/login', {
       method: 'POST',
@@ -29,7 +29,7 @@ describe('login', () => {
       credentials: 'include',
       body: JSON.stringify({ username: 'alice', password: 'secret' }),
     });
-    expect(result).toBe('alice');
+    expect(result).toEqual({ username: 'alice', role: 'admin' });
   });
 
   it('returns null for a rejected login', async () => {
@@ -39,14 +39,84 @@ describe('login', () => {
 });
 
 describe('checkSession', () => {
-  it('returns the username when /api/auth/me is 200', async () => {
-    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, username: 'alice' }) });
-    expect(await checkSession()).toBe('alice');
+  it('returns the username and role when /api/auth/me is 200', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, username: 'alice', role: 'user' }) });
+    expect(await checkSession()).toEqual({ username: 'alice', role: 'user' });
   });
 
   it('returns null when /api/auth/me is 401', async () => {
     (fetch as any).mockResolvedValueOnce({ ok: false });
     expect(await checkSession()).toBeNull();
+  });
+});
+
+describe('setupPassword', () => {
+  it('POSTs username/token/password and returns the logged-in user', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, username: 'bob', role: 'user' }) });
+    const result = await setupPassword('bob', 'sometoken', 'newpass');
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/auth/setup-password', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username: 'bob', token: 'sometoken', password: 'newpass' }),
+    });
+    expect(result).toEqual({ username: 'bob', role: 'user' });
+  });
+
+  it('returns null for an invalid/expired token', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: false });
+    expect(await setupPassword('bob', 'bad', 'newpass')).toBeNull();
+  });
+});
+
+describe('adminApi', () => {
+  it('lists users', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => [{ username: 'alice', role: 'admin', active: true, pending: false }] });
+    const result = await adminApi.listUsers();
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/admin/users', { credentials: 'include' });
+    expect(result).toEqual([{ username: 'alice', role: 'admin', active: true, pending: false }]);
+  });
+
+  it('creates a user', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ username: 'bob', role: 'user', setupToken: 'tok123' }) });
+    const result = await adminApi.createUser('bob', 'user');
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/admin/users', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username: 'bob', role: 'user' }),
+    });
+    expect(result).toEqual({ username: 'bob', role: 'user', setupToken: 'tok123' });
+  });
+
+  it('resends a setup link', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ setupToken: 'tok456' }) });
+    const result = await adminApi.resendSetup('bob');
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/admin/users/bob/resend-setup', {
+      method: 'POST',
+      credentials: 'include',
+    });
+    expect(result).toEqual({ setupToken: 'tok456' });
+  });
+
+  it('updates a user (active/role)', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
+    await adminApi.updateUser('bob', { active: false });
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/admin/users/bob', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ active: false }),
+    });
+  });
+});
+
+describe('listActiveUsernames', () => {
+  it('GETs /api/users/active', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ['alice', 'bob'] });
+    const result = await listActiveUsernames();
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/users/active', { credentials: 'include' });
+    expect(result).toEqual(['alice', 'bob']);
   });
 });
 

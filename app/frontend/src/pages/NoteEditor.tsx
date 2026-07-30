@@ -1,7 +1,8 @@
 import { useNavigate } from 'react-router-dom';
 import { RecordEditor } from '../components/RecordEditor';
 import { createRecordApi } from '../api/client';
-import { notesBlueprint } from '../blueprint/notesBlueprint';
+import { notesBlueprint, notesBlueprintAdmin } from '../blueprint/notesBlueprint';
+import { useAuth } from '../context/AuthContext';
 
 const notesApi = createRecordApi('notes');
 
@@ -16,14 +17,15 @@ const PROMOTE_TARGETS = [
 
 export function NoteEditor({ filename }: { filename: string }) {
   const navigate = useNavigate();
+  const { isAdmin } = useAuth();
 
   return (
     <RecordEditor
       api={notesApi}
-      blueprint={notesBlueprint}
+      blueprint={isAdmin ? notesBlueprintAdmin : notesBlueprint}
       filename={filename}
       type="notes"
-      renderExtraActions={(_frontmatter, body) => (
+      renderExtraActions={(frontmatter, body) => (
         <div className="flex items-center gap-2 flex-wrap">
           <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>
             Promote to
@@ -33,11 +35,16 @@ export function NoteEditor({ filename }: { filename: string }) {
               key={type}
               type="button"
               className="accession-btn"
-              onClick={() => navigate(`/${type}/new`, { state: { rawText: body } })}
+              onClick={() => navigate(`/${type}/new`, { state: { rawText: body, title: frontmatter.title } })}
             >
               {label}
             </button>
           ))}
+          {!isAdmin && typeof frontmatter.assigned_to === 'string' && frontmatter.assigned_to && (
+            <span className="text-xs font-mono" style={{ color: 'var(--ink-dim)' }}>
+              Assigned to: {frontmatter.assigned_to}
+            </span>
+          )}
         </div>
       )}
     />

@@ -1,19 +1,22 @@
 import { useEffect, useState } from 'react';
 import type { ReactNode } from 'react';
-import { checkSession, logout as apiLogout } from '../api/client';
+import { useLocation } from 'react-router-dom';
+import { checkSession, logout as apiLogout, type AuthedUser } from '../api/client';
 import { LoginPage } from '../pages/LoginPage';
+import { SetupPasswordPage } from '../pages/SetupPasswordPage';
 import { AuthContext } from '../context/AuthContext';
 
 export function AuthGate({ children }: { children: ReactNode }) {
+  const location = useLocation();
   const [status, setStatus] = useState<'checking' | 'authed' | 'unauthed'>('checking');
-  const [username, setUsername] = useState<string | null>(null);
+  const [user, setUser] = useState<AuthedUser | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkSession()
-      .then((name) => {
-        setUsername(name);
-        setStatus(name ? 'authed' : 'unauthed');
+      .then((found) => {
+        setUser(found);
+        setStatus(found ? 'authed' : 'unauthed');
       })
       .catch(() => {
         setError('Could not reach the backend to check login status. Is it running, and does its FRONTEND_ORIGIN match this page\'s origin?');
@@ -23,10 +26,24 @@ export function AuthGate({ children }: { children: ReactNode }) {
 
   const logout = () => {
     apiLogout().finally(() => {
-      setUsername(null);
+      setUser(null);
       setStatus('unauthed');
     });
   };
+
+  // A new user following a setup link isn't logged in yet -- this route must be
+  // reachable regardless of session status, so it's checked before any of the
+  // authed/unauthed branching below.
+  if (location.pathname === '/setup' && status !== 'authed') {
+    return (
+      <SetupPasswordPage
+        onSuccess={(found) => {
+          setUser(found);
+          setStatus('authed');
+        }}
+      />
+    );
+  }
 
   if (status === 'checking') {
     return (
@@ -38,13 +55,19 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (status === 'unauthed') {
     return (
       <LoginPage
-        onSuccess={(name) => {
-          setUsername(name);
+        onSuccess={(found) => {
+          setUser(found);
           setStatus('authed');
         }}
         error={error}
       />
     );
   }
-  return <AuthContext.Provider value={{ username, logout }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{ username: user?.username ?? null, role: user?.role ?? null, isAdmin: user?.role === 'admin', logout }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }

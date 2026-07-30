@@ -16,6 +16,21 @@ describe('cliProvider.extractFields', () => {
     expect(result).toEqual({ department: 'QC', tags: [], purpose: 'p', scope: 's' });
   });
 
+  it('always asks for title, status, and related_documents regardless of type', async () => {
+    let capturedPrompt;
+    const runner = async (prompt) => {
+      capturedPrompt = prompt;
+      return JSON.stringify({});
+    };
+    const provider = createCliProvider(runner);
+
+    await provider.extractFields('some text');
+
+    expect(capturedPrompt).toContain('title');
+    expect(capturedPrompt).toContain('default to Draft');
+    expect(capturedPrompt).toContain('related_documents');
+  });
+
   it('asks for CAP-specific fields when type is cap', async () => {
     let capturedPrompt;
     const runner = async (prompt) => {

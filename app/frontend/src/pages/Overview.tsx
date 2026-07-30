@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { createRecordApi, type RecordSummary } from '../api/client';
+import { createRecordApi, parseFrontmatter, type RecordSummary } from '../api/client';
 import { isOverdue } from '../components/RecordDashboard';
 import { RecordCard } from '../components/RecordCard';
 import { StripChart } from '../components/StripChart';
@@ -15,40 +15,92 @@ const RECORD_TYPES = [
   { type: 'training', urlSlug: 'training', label: 'Training', colorVar: '--ink-dim', api: createRecordApi('training') },
 ];
 
-function readFolderFile(files: FileList): Promise<string> {
-  const textLike = Array.from(files).find((f) => f.type.startsWith('text/') || /\.(md|txt)$/i.test(f.name));
-  const target = textLike ?? files[0];
+const notesApi = createRecordApi('notes');
+
+function isTextLike(file: File): boolean {
+  return file.type.startsWith('text/') || /\.(md|txt)$/i.test(file.name);
+}
+
+function readFileText(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = () => resolve(String(reader.result ?? ''));
     reader.onerror = reject;
-    reader.readAsText(target);
+    reader.readAsText(file);
   });
+}
+
+function titleFromFilename(name: string): string {
+  return name.replace(/\.[^./]+$/, '');
 }
 
 function AccessionPanel() {
   const navigate = useNavigate();
   const [rawText, setRawText] = useState('');
-  const [type, setType] = useState('sop');
+  const [folderName, setFolderName] = useState('');
+  const [titleName, setTitleName] = useState('');
   const [pickedLabel, setPickedLabel] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [importing, setImporting] = useState(false);
+  const [importResult, setImportResult] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Multiple files (a selected/dropped folder, or several loose files at
+  // once) each get their own note immediately -- no clicking through one at a
+  // time. Each file's own frontmatter (title/folder/tags/related_documents/
+  // etc, parsed as-is) is what lands in the note; the dropped folder name is
+  // only a fallback for files that don't already specify their own folder.
+  const importFolder = async (files: File[], folder: string) => {
+    setImportResult(null);
+    setImporting(true);
+    let created = 0;
+    let failed = 0;
+    for (const file of files) {
+      try {
+        const text = await readFileText(file);
+        const { frontmatter, body } = await parseFrontmatter(text);
+        await notesApi.create({ folder, title: titleFromFilename(file.name), ...frontmatter }, body);
+        created += 1;
+      } catch {
+        failed += 1;
+      }
+    }
+    setImporting(false);
+    setImportResult(
+      `Imported ${created} note${created === 1 ? '' : 's'} from ${folder ? folder + '/' : 'selection'}${failed ? ` (${failed} failed)` : ''}.`
+    );
+  };
 
   const handleFiles = async (files: FileList | null) => {
     if (!files || files.length === 0) return;
     const first = files[0] as File & { webkitRelativePath?: string };
-    const folder = first.webkitRelativePath ? first.webkitRelativePath.split('/')[0] + '/' : 'selection';
-    setPickedLabel(`${files.length} file${files.length === 1 ? '' : 's'} from ${folder}`);
+    const folder = first.webkitRelativePath ? first.webkitRelativePath.split('/')[0] : '';
+    const textFiles = Array.from(files).filter(isTextLike);
+
+    if (files.length > 1) {
+      await importFolder(textFiles, folder);
+      return;
+    }
+
+    const target = textFiles[0] ?? files[0];
+    setFolderName(folder);
+    setTitleName(titleFromFilename(target.name));
+    setPickedLabel(`1 file from ${folder ? folder + '/' : 'selection'}`);
     try {
-      const text = await readFolderFile(files);
-      setRawText(text);
+      setRawText(await readFileText(target));
     } catch {
       // ponytail: unreadable file, user can still paste text manually
     }
   };
 
+  // Accessioning always lands in Notes, not a fixed QMS type -- a dropped
+  // folder can hold mixed record types or ones already organized, and forcing
+  // one type up front broke that. The dropped folder's name carries through
+  // as the note's folder field; promote it to a real record type later. The
+  // file's own name (if this came from a file rather than pasted text) seeds
+  // the title -- extraction can't out-rank a name we already know is right.
   const goAccession = () => {
-    navigate(`/${type}/new`, { state: { rawText } });
+    navigate('/notes/new', { state: { rawText, folder: folderName, title: titleName } });
   };
 
   return (
@@ -85,6 +137,19 @@ function AccessionPanel() {
             Selected: <b>{pickedLabel}</b>
           </div>
         )}
+        {importing && (
+          <div className="accession-picked show" role="status">
+            Importing notes…
+          </div>
+        )}
+        {importResult && (
+          <div className="accession-picked show" role="status">
+            {importResult}{' '}
+            <button type="button" className="accession-btn" onClick={() => navigate('/notes')}>
+              View Notes
+            </button>
+          </div>
+        )}
         <div className="accession-divider">or paste</div>
         <textarea
           placeholder="Paste raw notes to be catalogued into the register..."
@@ -92,21 +157,6 @@ function AccessionPanel() {
           value={rawText}
           onChange={(e) => setRawText(e.target.value)}
         />
-        <label className="flex items-center gap-2 text-xs" style={{ color: 'var(--ink-dim)' }}>
-          Catalogue as
-          <select
-            aria-label="Record type"
-            value={type}
-            onChange={(e) => setType(e.target.value)}
-            style={{ background: 'var(--paper-2)', border: '1px solid var(--rule)', color: 'var(--ink)', borderRadius: 6, padding: '2px 6px' }}
-          >
-            {RECORD_TYPES.map((t) => (
-              <option key={t.type} value={t.type}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </label>
         <button type="button" className="accession-btn" disabled={!rawText.trim()} onClick={goAccession}>
           Accession
         </button>

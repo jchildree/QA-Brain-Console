@@ -19,7 +19,8 @@ export function ChangeIntake() {
       api={changeApi}
       blueprint={changeBlueprint}
       onSave={handleSave}
-      initialRawText={(location.state as { rawText?: string } | null)?.rawText}
+      initialRawText={(location.state as { rawText?: string; title?: string } | null)?.rawText}
+      initialTitle={(location.state as { rawText?: string; title?: string } | null)?.title}
     />
   );
 }

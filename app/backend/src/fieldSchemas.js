@@ -7,4 +7,12 @@ const FIELD_SCHEMAS = {
   training: 'department (one of QC, QA, IT, Operations), tags (array of strings), employee_name (short string), role (short string)',
 };
 
-module.exports = { FIELD_SCHEMAS };
+// Fields every record type shares, extracted the same way regardless of type
+// -- kept separate from FIELD_SCHEMAS so this guidance isn't duplicated six
+// times over.
+const UNIVERSAL_FIELDS =
+  'title (short string -- if the text has no explicit title, use the first heading, the first line, an ALL CAPS line, or bolded text near the top as the title), ' +
+  'status (one of Draft, In Review, Approved, Obsolete -- default to Draft unless the text explicitly states its own status), ' +
+  'related_documents (array of document id strings this text references or is related to, e.g. SOP-20260101-001, CAP-20260101-001, INC-20260101-001, CHG-20260101-001, AUD-20260101-001, TRN-20260101-001, NOTE-20260101-001 -- include an id even if you are not sure a record with that id exists yet)';
+
+module.exports = { FIELD_SCHEMAS, UNIVERSAL_FIELDS };

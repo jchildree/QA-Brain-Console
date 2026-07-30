@@ -55,4 +55,21 @@ describe('anthropicProvider.extractFields', () => {
     await provider.extractFields('some cap note', 'cap');
     expect(capturedArgs.messages[0].content).toContain('root_cause');
   });
+
+  it('always asks for title, status, and related_documents regardless of type', async () => {
+    let capturedArgs;
+    const fakeClient = {
+      messages: {
+        create: async (args) => {
+          capturedArgs = args;
+          return { content: [{ type: 'text', text: '{}' }] };
+        },
+      },
+    };
+    const provider = createAnthropicProvider(fakeClient);
+    await provider.extractFields('some text');
+    expect(capturedArgs.messages[0].content).toContain('title');
+    expect(capturedArgs.messages[0].content).toContain('default to Draft');
+    expect(capturedArgs.messages[0].content).toContain('related_documents');
+  });
 });

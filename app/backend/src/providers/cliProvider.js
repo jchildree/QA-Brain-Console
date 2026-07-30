@@ -1,5 +1,5 @@
 const { spawn } = require('child_process');
-const { FIELD_SCHEMAS } = require('../fieldSchemas');
+const { FIELD_SCHEMAS, UNIVERSAL_FIELDS } = require('../fieldSchemas');
 
 function defaultRunner(prompt) {
   return new Promise((resolve, reject) => {
@@ -24,7 +24,7 @@ function defaultRunner(prompt) {
 function createCliProvider(runner = defaultRunner) {
   async function extractFields(rawText, type = 'sop') {
     const schema = FIELD_SCHEMAS[type] || FIELD_SCHEMAS.sop;
-    const prompt = `Extract ${type.toUpperCase()} frontmatter fields from this raw text. Return ONLY valid JSON with keys: ${schema}. Raw text:\n\n${rawText}`;
+    const prompt = `Extract ${type.toUpperCase()} frontmatter fields from this raw text. Return ONLY valid JSON with keys: ${UNIVERSAL_FIELDS}, ${schema}. Raw text:\n\n${rawText}`;
     const raw = (await runner(prompt)).trim();
     const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
     const jsonText = fenced ? fenced[1] : raw;

@@ -19,7 +19,8 @@ export function AuditIntake() {
       api={auditApi}
       blueprint={auditBlueprint}
       onSave={handleSave}
-      initialRawText={(location.state as { rawText?: string } | null)?.rawText}
+      initialRawText={(location.state as { rawText?: string; title?: string } | null)?.rawText}
+      initialTitle={(location.state as { rawText?: string; title?: string } | null)?.title}
     />
   );
 }

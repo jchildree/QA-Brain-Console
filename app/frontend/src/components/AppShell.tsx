@@ -2,7 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const NAV_LINKS: { label: string; to: string }[] = [
+const BASE_NAV_LINKS: { label: string; to: string }[] = [
   { label: 'Overview', to: '/' },
   { label: 'SOP', to: '/sop' },
   { label: 'CAP', to: '/cap' },
@@ -11,7 +11,6 @@ const NAV_LINKS: { label: string; to: string }[] = [
   { label: 'Audit', to: '/audit' },
   { label: 'Training', to: '/training' },
   { label: 'Notes', to: '/notes' },
-  { label: 'Search', to: '/search' },
   { label: 'Evidence Library', to: '/evidence' },
   { label: 'Trash', to: '/trash' },
   { label: 'Settings', to: '/settings' },
@@ -20,7 +19,8 @@ const NAV_LINKS: { label: string; to: string }[] = [
 const TODAY = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
 
 export function AppShell({ children }: { children: ReactNode }) {
-  const { username, logout } = useAuth();
+  const { username, isAdmin, logout } = useAuth();
+  const navLinks = isAdmin ? [...BASE_NAV_LINKS, { label: 'Users', to: '/admin/users' }] : BASE_NAV_LINKS;
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] selection:bg-[var(--gold)]/30 selection:text-[var(--ink)]">
       <div className="max-w-[1640px] mx-auto px-6 pt-6 pb-11">
@@ -38,7 +38,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="tabs">
-          {NAV_LINKS.map((link) => (
+          {navLinks.map((link) => (
             <NavLink
               key={link.to}
               to={link.to}

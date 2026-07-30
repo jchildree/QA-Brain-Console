@@ -31,6 +31,15 @@ describe('NoteIntake', () => {
     expect(screen.getByLabelText('Body')).toHaveValue('carried over text');
   });
 
+  it('pre-fills the title from router state (e.g. an uploaded file\'s name)', () => {
+    render(
+      <MemoryRouter initialEntries={[{ pathname: '/notes/new', state: { title: 'meeting-notes' } }]}>
+        <NoteIntake />
+      </MemoryRouter>
+    );
+    expect(screen.getByLabelText('Title *')).toHaveValue('meeting-notes');
+  });
+
   it('creates the note via POST /api/notes and navigates to its editor route on save', async () => {
     (fetch as any).mockResolvedValueOnce({
       ok: true,

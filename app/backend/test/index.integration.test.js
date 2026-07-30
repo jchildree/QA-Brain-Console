@@ -12,6 +12,7 @@ const request = require('supertest');
 const { upsertUser } = require('../src/users');
 
 upsertUser(process.env.AUTH_USERS_FILE, 'integration-test-user', 'integration-test-password');
+upsertUser(process.env.AUTH_USERS_FILE, 'integration-test-admin', 'integration-test-password', 'admin');
 
 const app = require('../src/index');
 
@@ -37,6 +38,28 @@ describe('index.js wiring', () => {
     const agent = request.agent(app);
     await agent.post('/api/auth/login').send({ username: 'integration-test-user', password: 'integration-test-password' });
     const res = await agent.get('/api/notes');
+    expect(res.status).toBe(200);
+  });
+
+  it('rejects /api/admin/users for a non-admin and allows it for an admin', async () => {
+    const userAgent = request.agent(app);
+    await userAgent.post('/api/auth/login').send({ username: 'integration-test-user', password: 'integration-test-password' });
+    const userRes = await userAgent.get('/api/admin/users');
+    expect(userRes.status).toBe(403);
+
+    const adminAgent = request.agent(app);
+    await adminAgent.post('/api/auth/login').send({ username: 'integration-test-admin', password: 'integration-test-password' });
+    const adminRes = await adminAgent.get('/api/admin/users');
+    expect(adminRes.status).toBe(200);
+  });
+
+  it('rejects /api/parse-frontmatter with no session and allows it after logging in', async () => {
+    const noSessionRes = await request(app).post('/api/parse-frontmatter').send({ rawText: 'x' });
+    expect(noSessionRes.status).toBe(401);
+
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ username: 'integration-test-user', password: 'integration-test-password' });
+    const res = await agent.post('/api/parse-frontmatter').send({ rawText: '---\ntitle: x\n---\nbody' });
     expect(res.status).toBe(200);
   });
 });

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { type createRecordApi } from '../api/client';
 import { DynamicForm } from './DynamicForm';
 import { type BlueprintField } from '../blueprint/sopBlueprint';
@@ -8,25 +8,49 @@ export function RecordIntake({
   blueprint,
   onSave,
   initialRawText = '',
+  initialTitle = '',
 }: {
   api: ReturnType<typeof createRecordApi>;
   blueprint: BlueprintField[];
   onSave: (frontmatter: Record<string, unknown>, body: string) => Promise<void>;
   initialRawText?: string;
+  initialTitle?: string;
 }) {
   const [rawText, setRawText] = useState(initialRawText);
-  const [body, setBody] = useState('');
+  // Promoting a note (or dropping a file) carries its text over as the actual
+  // body too, not just the extraction source -- previously this stayed empty
+  // until the user manually copied it in.
+  const [body, setBody] = useState(initialRawText);
   const [extracting, setExtracting] = useState(false);
-  const [fields, setFields] = useState<Record<string, unknown>>({});
+  const [extractError, setExtractError] = useState<string | null>(null);
+  // A known-good title (a note's own title, or an uploaded file's name) beats
+  // whatever the AI guesses from raw text -- extraction fills the rest of the
+  // form but must not clobber this.
+  const [fields, setFields] = useState<Record<string, unknown>>(initialTitle ? { title: initialTitle } : {});
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const handleExtract = async () => {
     setExtracting(true);
-    const result = await api.extract(rawText);
-    setFields(result);
-    setExtracting(false);
+    setExtractError(null);
+    try {
+      const result = await api.extract(rawText);
+      setFields((prev) => ({ ...result, title: prev.title || result.title }));
+    } catch (err) {
+      setExtractError(err instanceof Error ? err.message : 'Extraction failed');
+    } finally {
+      setExtracting(false);
+    }
   };
+
+  // Auto-run extraction once when arriving with text already in hand (promote
+  // flow, dropped file) so the form is populated without an extra manual click.
+  useEffect(() => {
+    if (initialRawText.trim()) {
+      handleExtract();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const handleChange = (key: string, value: unknown) => {
     setFields((prev) => ({ ...prev, [key]: value }));
@@ -66,6 +90,11 @@ export function RecordIntake({
         >
           {extracting ? 'Extracting…' : 'Extract'}
         </button>
+        {extractError && (
+          <p role="alert" className="text-xs font-mono" style={{ color: 'var(--red)' }}>
+            {extractError}
+          </p>
+        )}
       </div>
       <div className="rounded-xl border p-6" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
         <DynamicForm blueprint={blueprint} values={fields} onChange={handleChange} />

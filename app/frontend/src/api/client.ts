@@ -18,18 +18,14 @@ export async function extractFromText(rawText: string): Promise<Record<string, u
   return res.json();
 }
 
-export interface SearchResult {
-  type: string;
-  urlSlug: string;
-  filename: string;
-  id: string;
-  status?: string;
-  [key: string]: unknown;
-}
-
-export async function search(q: string): Promise<SearchResult[]> {
-  const res = await fetch(`${BASE_URL}/search?q=${encodeURIComponent(q)}`, { credentials: 'include' });
-  if (!res.ok) throw new Error('Search failed');
+export async function parseFrontmatter(rawText: string): Promise<{ frontmatter: Record<string, unknown>; body: string }> {
+  const res = await fetch(`${BASE_URL}/parse-frontmatter`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ rawText }),
+  });
+  if (!res.ok) throw new Error('Failed to parse frontmatter');
   return res.json();
 }
 
@@ -45,7 +41,14 @@ export async function uploadAttachment(filename: string, file: File): Promise<{ 
   return res.json();
 }
 
-export async function login(username: string, password: string): Promise<string | null> {
+export type Role = 'admin' | 'user';
+
+export interface AuthedUser {
+  username: string;
+  role: Role;
+}
+
+export async function login(username: string, password: string): Promise<AuthedUser | null> {
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -54,14 +57,74 @@ export async function login(username: string, password: string): Promise<string 
   });
   if (!res.ok) return null;
   const data = await res.json();
-  return data.username as string;
+  return { username: data.username, role: data.role };
 }
 
-export async function checkSession(): Promise<string | null> {
+export async function checkSession(): Promise<AuthedUser | null> {
   const res = await fetch(`${BASE_URL}/auth/me`, { credentials: 'include' });
   if (!res.ok) return null;
   const data = await res.json();
-  return data.username as string;
+  return { username: data.username, role: data.role };
+}
+
+export async function setupPassword(username: string, token: string, password: string): Promise<AuthedUser | null> {
+  const res = await fetch(`${BASE_URL}/auth/setup-password`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ username, token, password }),
+  });
+  if (!res.ok) return null;
+  const data = await res.json();
+  return { username: data.username, role: data.role };
+}
+
+export interface AdminUserSummary {
+  username: string;
+  role: Role;
+  active: boolean;
+  pending: boolean;
+}
+
+export const adminApi = {
+  async listUsers(): Promise<AdminUserSummary[]> {
+    const res = await fetch(`${BASE_URL}/admin/users`, { credentials: 'include' });
+    if (!res.ok) throw new Error('Failed to load users');
+    return res.json();
+  },
+  async createUser(username: string, role: Role): Promise<{ username: string; role: Role; setupToken: string }> {
+    const res = await fetch(`${BASE_URL}/admin/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ username, role }),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to create user');
+    return res.json();
+  },
+  async resendSetup(username: string): Promise<{ setupToken: string }> {
+    const res = await fetch(`${BASE_URL}/admin/users/${username}/resend-setup`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    if (!res.ok) throw new Error('Failed to resend setup link');
+    return res.json();
+  },
+  async updateUser(username: string, updates: { active?: boolean; role?: Role }): Promise<void> {
+    const res = await fetch(`${BASE_URL}/admin/users/${username}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify(updates),
+    });
+    if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || 'Failed to update user');
+  },
+};
+
+export async function listActiveUsernames(): Promise<string[]> {
+  const res = await fetch(`${BASE_URL}/users/active`, { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to load users');
+  return res.json();
 }
 
 export async function logout(): Promise<void> {

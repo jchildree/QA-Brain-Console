@@ -2,14 +2,17 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { createRecordApi, type RecordSummary } from '../api/client';
 import { NoteCard } from '../components/NoteCard';
+import { useAuth } from '../context/AuthContext';
 
 const notesApi = createRecordApi('notes');
 
 export function NotesDashboard() {
+  const { username } = useAuth();
   const [notes, setNotes] = useState<RecordSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
   const [folder, setFolder] = useState('');
+  const [assignedToMe, setAssignedToMe] = useState(false);
 
   useEffect(() => {
     notesApi
@@ -29,7 +32,8 @@ export function NotesDashboard() {
   const q = query.trim().toLowerCase();
   const searched = q ? notes.filter((n) => JSON.stringify(n).toLowerCase().includes(q)) : notes;
   const folders = Array.from(new Set(notes.map((n) => (typeof n.folder === 'string' ? n.folder : '')).filter(Boolean))).sort();
-  const visible = folder ? searched.filter((n) => n.folder === folder) : searched;
+  const byFolder = folder ? searched.filter((n) => n.folder === folder) : searched;
+  const visible = assignedToMe ? byFolder.filter((n) => n.assigned_to === username) : byFolder;
 
   return (
     <div className="flex flex-col gap-8">
@@ -58,6 +62,15 @@ export function NotesDashboard() {
               <option key={f} value={f}>{f}</option>
             ))}
           </select>
+        </label>
+        <label className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>
+          <input
+            aria-label="Assigned to me"
+            type="checkbox"
+            checked={assignedToMe}
+            onChange={(e) => setAssignedToMe(e.target.checked)}
+          />
+          Assigned to me
         </label>
         <Link to="/notes/new" className="tab-sm">
           + New Note

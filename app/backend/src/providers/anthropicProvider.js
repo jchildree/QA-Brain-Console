@@ -1,4 +1,4 @@
-const { FIELD_SCHEMAS } = require('../fieldSchemas');
+const { FIELD_SCHEMAS, UNIVERSAL_FIELDS } = require('../fieldSchemas');
 
 function createAnthropicProvider(client) {
   async function extractFields(rawText, type = 'sop') {
@@ -9,7 +9,7 @@ function createAnthropicProvider(client) {
       messages: [
         {
           role: 'user',
-          content: `Extract ${type.toUpperCase()} frontmatter fields from this raw text. Return ONLY valid JSON with keys: ${schema}. Raw text:\n\n${rawText}`,
+          content: `Extract ${type.toUpperCase()} frontmatter fields from this raw text. Return ONLY valid JSON with keys: ${UNIVERSAL_FIELDS}, ${schema}. Raw text:\n\n${rawText}`,
         },
       ],
     });

@@ -12,7 +12,11 @@ const { createSearchRouter } = require('./routes/search');
 const { createEvidenceRouter } = require('./routes/evidence');
 const { createTrashRouter } = require('./routes/trash');
 const { createAuthRouter } = require('./routes/auth');
+const { createAdminRouter } = require('./routes/admin');
+const { createUsersRouter } = require('./routes/users');
+const { createParseRouter } = require('./routes/parse');
 const { createRequireAuth } = require('./middleware/requireAuth');
+const { requireAdmin } = require('./middleware/requireAdmin');
 
 const app = express();
 
@@ -50,8 +54,17 @@ app.get('/api/health', (req, res) => res.json({ ok: true }));
 
 app.use('/api', createAuthRouter(SESSION_SECRET, USERS_FILE));
 
-const requireAuth = createRequireAuth(SESSION_SECRET);
+const requireAuth = createRequireAuth(SESSION_SECRET, USERS_FILE);
 const provider = getProvider();
+
+app.use('/api/admin', requireAuth, requireAdmin);
+app.use('/api', createAdminRouter(USERS_FILE));
+
+app.use('/api/users', requireAuth);
+app.use('/api', createUsersRouter(USERS_FILE));
+
+app.use('/api/parse-frontmatter', requireAuth);
+app.use('/api', createParseRouter());
 
 app.use('/api/intake', requireAuth);
 app.use('/api', createIntakeRouter(provider));
