@@ -72,6 +72,35 @@ describe('PUT /api/cap/:filename', () => {
     const getRes = await request(app).get('/api/cap/CAP-20260101-001.md');
     expect(getRes.body.frontmatter.status).toBe('In Review');
   });
+
+  it('saves when expectedHash matches the current file', async () => {
+    const getRes = await request(app).get('/api/cap/CAP-20260101-001.md');
+    const res = await request(app)
+      .put('/api/cap/CAP-20260101-001.md')
+      .send({
+        frontmatter: { id: 'CAP-20260101-001', status: 'In Review' },
+        body: '# Updated\n',
+        expectedHash: getRes.body.hash,
+      });
+    expect(res.status).toBe(200);
+  });
+
+  it('returns 409 and does not write when expectedHash is stale', async () => {
+    const getRes = await request(app).get('/api/cap/CAP-20260101-001.md');
+    // simulate an external edit (e.g. via Obsidian) between load and save
+    fs.writeFileSync(path.join(tmpDir, 'CAP-20260101-001.md'), FIXTURE.replace('Draft', 'In Review'), 'utf8');
+
+    const res = await request(app)
+      .put('/api/cap/CAP-20260101-001.md')
+      .send({
+        frontmatter: { id: 'CAP-20260101-001', status: 'Approved' },
+        body: '# Updated\n',
+        expectedHash: getRes.body.hash,
+      });
+    expect(res.status).toBe(409);
+    const after = await request(app).get('/api/cap/CAP-20260101-001.md');
+    expect(after.body.frontmatter.status).toBe('In Review');
+  });
 });
 
 describe('POST /api/cap', () => {

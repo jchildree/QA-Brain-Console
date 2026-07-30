@@ -1,44 +1,8 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { listSops, getSop, saveSop, extractFromText, login, checkSession, logout, createRecordApi } from './client';
+import { SaveConflictError, extractFromText, login, checkSession, logout, createRecordApi } from './client';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
-});
-
-describe('listSops', () => {
-  it('GETs /api/sops and returns parsed JSON', async () => {
-    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => [{ id: 'SOP-1' }] });
-    const result = await listSops();
-    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/sops', { credentials: 'include' });
-    expect(result).toEqual([{ id: 'SOP-1' }]);
-  });
-
-  it('throws when the response is not ok', async () => {
-    (fetch as any).mockResolvedValueOnce({ ok: false });
-    await expect(listSops()).rejects.toThrow('Failed to load SOPs');
-  });
-});
-
-describe('getSop', () => {
-  it('GETs /api/sops/:filename', async () => {
-    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ filename: 'a.md' }) });
-    const result = await getSop('a.md');
-    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/sops/a.md', { credentials: 'include' });
-    expect(result).toEqual({ filename: 'a.md' });
-  });
-});
-
-describe('saveSop', () => {
-  it('PUTs frontmatter and body', async () => {
-    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
-    await saveSop('a.md', { status: 'Draft' }, 'body text');
-    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/sops/a.md', {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({ frontmatter: { status: 'Draft' }, body: 'body text' }),
-    });
-  });
 });
 
 describe('extractFromText', () => {
@@ -116,5 +80,22 @@ describe('createRecordApi', () => {
       credentials: 'include',
       body: JSON.stringify({ frontmatter: { status: 'Draft' }, body: 'body' }),
     });
+  });
+
+  it('saves a record with expectedHash and returns the new hash', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, status: 200, json: async () => ({ ok: true, hash: 'new-hash' }) });
+    const result = await capApi.save('CAP-1.md', { status: 'In Review' }, 'body', 'old-hash');
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/cap/CAP-1.md', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ frontmatter: { status: 'In Review' }, body: 'body', expectedHash: 'old-hash' }),
+    });
+    expect(result).toEqual({ ok: true, hash: 'new-hash' });
+  });
+
+  it('throws SaveConflictError on a 409', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: false, status: 409 });
+    await expect(capApi.save('CAP-1.md', { status: 'In Review' }, 'body', 'stale-hash')).rejects.toThrow(SaveConflictError);
   });
 });

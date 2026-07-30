@@ -1,41 +1,10 @@
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000/api';
 
-export interface SopSummary {
-  id: string;
-  status: string;
-  version: string;
-  department: string;
-  review_date: string;
-  owner: string;
-  filename: string;
-}
-
-export interface SopDetail {
-  frontmatter: Record<string, unknown>;
-  body: string;
-  filename: string;
-}
-
-export async function listSops(): Promise<SopSummary[]> {
-  const res = await fetch(`${BASE_URL}/sops`, { credentials: 'include' });
-  if (!res.ok) throw new Error('Failed to load SOPs');
-  return res.json();
-}
-
-export async function getSop(filename: string): Promise<SopDetail> {
-  const res = await fetch(`${BASE_URL}/sops/${filename}`, { credentials: 'include' });
-  if (!res.ok) throw new Error('Failed to load SOP');
-  return res.json();
-}
-
-export async function saveSop(filename: string, frontmatter: Record<string, unknown>, body: string): Promise<void> {
-  const res = await fetch(`${BASE_URL}/sops/${filename}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({ frontmatter, body }),
-  });
-  if (!res.ok) throw new Error('Failed to save SOP');
+export class SaveConflictError extends Error {
+  constructor() {
+    super('This record changed on disk since it was loaded. Reload and re-apply your edits.');
+    this.name = 'SaveConflictError';
+  }
 }
 
 export async function extractFromText(rawText: string): Promise<Record<string, unknown>> {
@@ -99,6 +68,7 @@ export interface RecordDetail {
   frontmatter: Record<string, unknown>;
   body: string;
   filename: string;
+  hash: string;
 }
 
 export function createRecordApi(typeSlug: string) {
@@ -115,14 +85,16 @@ export function createRecordApi(typeSlug: string) {
       if (!res.ok) throw new Error(`Failed to load ${typeSlug} record`);
       return res.json();
     },
-    async save(filename: string, frontmatter: Record<string, unknown>, body: string): Promise<void> {
+    async save(filename: string, frontmatter: Record<string, unknown>, body: string, expectedHash?: string): Promise<{ hash: string }> {
       const res = await fetch(`${base}/${filename}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ frontmatter, body }),
+        body: JSON.stringify({ frontmatter, body, expectedHash }),
       });
+      if (res.status === 409) throw new SaveConflictError();
       if (!res.ok) throw new Error(`Failed to save ${typeSlug} record`);
+      return res.json();
     },
     async create(frontmatter: Record<string, unknown>, body: string): Promise<RecordDetail> {
       const res = await fetch(base, {

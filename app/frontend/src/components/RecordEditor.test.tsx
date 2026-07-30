@@ -17,8 +17,9 @@ function makeFakeApi() {
       filename: 'CAP-1.md',
       frontmatter: { status: 'Draft', version: '1.0', owner: 'Jane', department: 'QA', review_date: '2026-01-01', tags: [], root_cause: '', effectiveness_status: 'Pending' },
       body: '# Existing body\n',
+      hash: 'hash-1',
     }),
-    save: vi.fn().mockResolvedValue(undefined),
+    save: vi.fn().mockResolvedValue({ hash: 'hash-2' }),
     create: vi.fn(),
     extract: vi.fn(),
     remove: vi.fn().mockResolvedValue(undefined),
@@ -54,9 +55,31 @@ describe('RecordEditor', () => {
       expect(api.save).toHaveBeenCalledWith(
         'CAP-1.md',
         expect.objectContaining({ owner: 'New Owner' }),
-        '# Updated body\n'
+        '# Updated body\n',
+        'hash-1'
       )
     );
+  });
+
+  it('shows a Reload action instead of the raw error on a save conflict', async () => {
+    const api = makeFakeApi();
+    const { SaveConflictError } = await import('../api/client');
+    api.save.mockRejectedValueOnce(new SaveConflictError());
+    render(
+      <MemoryRouter>
+        <RecordEditor api={api} blueprint={capBlueprint} filename="CAP-1.md" type="cap" />
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByLabelText('Owner *')).toHaveValue('Jane'));
+
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => expect(screen.getByText('Reload')).toBeInTheDocument());
+
+    fireEvent.click(screen.getByText('Reload'));
+
+    await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
+    expect(screen.queryByText('Reload')).not.toBeInTheDocument();
   });
 
   it('deletes the record after confirmation', async () => {

@@ -1,6 +1,13 @@
 const fs = require('fs');
 const path = require('path');
+const crypto = require('crypto');
 const matter = require('gray-matter');
+
+class ConflictError extends Error {}
+
+function hashContent(raw) {
+  return crypto.createHash('sha256').update(raw, 'utf8').digest('hex');
+}
 
 function listSops(sopDir) {
   return fs
@@ -18,13 +25,22 @@ function readSop(sopDir, filename) {
   const filePath = path.join(sopDir, filename);
   const raw = fs.readFileSync(filePath, 'utf8');
   const { data, content } = matter(raw);
-  return { frontmatter: data, body: content, filename };
+  return { frontmatter: data, body: content, filename, hash: hashContent(raw) };
 }
 
-function writeSop(sopDir, filename, frontmatter, body) {
+// ponytail: content hash instead of a lock/watcher -- catches the vault-edited-
+// externally-while-console-had-it-open race without polling the filesystem.
+function writeSop(sopDir, filename, frontmatter, body, expectedHash) {
   const filePath = path.join(sopDir, filename);
+  if (expectedHash) {
+    const current = fs.readFileSync(filePath, 'utf8');
+    if (hashContent(current) !== expectedHash) {
+      throw new ConflictError('record changed on disk since it was loaded');
+    }
+  }
   const output = matter.stringify(body, frontmatter);
   fs.writeFileSync(filePath, output, 'utf8');
+  return { hash: hashContent(output) };
 }
 
 function nextSequence(dir, prefix, dateStr, exclude = new Set()) {
@@ -72,4 +88,4 @@ function unlinkRecord(dir, filename) {
   fs.unlinkSync(path.join(dir, filename));
 }
 
-module.exports = { listSops, readSop, writeSop, createRecord, moveRecord, unlinkRecord };
+module.exports = { listSops, readSop, writeSop, createRecord, moveRecord, unlinkRecord, ConflictError };

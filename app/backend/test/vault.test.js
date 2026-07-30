@@ -1,7 +1,7 @@
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-const { listSops, readSop, writeSop, createRecord, moveRecord, unlinkRecord } = require('../src/vault');
+const { listSops, readSop, writeSop, createRecord, moveRecord, unlinkRecord, ConflictError } = require('../src/vault');
 
 const FIXTURE = `---
 id: SOP-20260101-001
@@ -72,6 +72,22 @@ describe('writeSop', () => {
     const sop = readSop(tmpDir, 'SOP-20260101-001.md');
     expect(sop.frontmatter.status).toBe('In Review');
     expect(sop.body).toContain('# Updated body');
+  });
+
+  it('writes when expectedHash matches the current file content', () => {
+    const { hash } = readSop(tmpDir, 'SOP-20260101-001.md');
+    const result = writeSop(tmpDir, 'SOP-20260101-001.md', { id: 'SOP-20260101-001', status: 'In Review' }, '# Updated body\n', hash);
+    expect(readSop(tmpDir, 'SOP-20260101-001.md').frontmatter.status).toBe('In Review');
+    expect(result.hash).toBe(readSop(tmpDir, 'SOP-20260101-001.md').hash);
+  });
+
+  it('throws ConflictError and leaves the file untouched when expectedHash is stale', () => {
+    const { hash } = readSop(tmpDir, 'SOP-20260101-001.md');
+    fs.writeFileSync(path.join(tmpDir, 'SOP-20260101-001.md'), FIXTURE.replace('Approved', 'In Review'), 'utf8');
+    expect(() =>
+      writeSop(tmpDir, 'SOP-20260101-001.md', { id: 'SOP-20260101-001', status: 'Obsolete' }, '# Clobbered\n', hash)
+    ).toThrow(ConflictError);
+    expect(readSop(tmpDir, 'SOP-20260101-001.md').frontmatter.status).toBe('In Review');
   });
 });
 

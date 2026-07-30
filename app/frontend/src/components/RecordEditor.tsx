@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { type createRecordApi } from '../api/client';
+import { SaveConflictError, type createRecordApi } from '../api/client';
 import { DynamicForm } from './DynamicForm';
 import { type BlueprintField } from '../blueprint/sopBlueprint';
 
@@ -18,18 +18,26 @@ export function RecordEditor({
   const navigate = useNavigate();
   const [frontmatter, setFrontmatter] = useState<Record<string, unknown>>({});
   const [body, setBody] = useState('');
+  const [hash, setHash] = useState<string | undefined>(undefined);
   const [loaded, setLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [conflict, setConflict] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  useEffect(() => {
+  const load = () => {
+    setLoaded(false);
     api.get(filename).then((record) => {
       setFrontmatter(record.frontmatter);
       setBody(record.body);
+      setHash(record.hash);
       setLoaded(true);
+      setConflict(false);
+      setSaveError(null);
     });
-  }, [api, filename]);
+  };
+
+  useEffect(load, [api, filename]);
 
   if (!loaded) return <p className="text-sm font-mono" style={{ color: 'var(--ink-dim)' }}>Loading…</p>;
 
@@ -40,11 +48,16 @@ export function RecordEditor({
   const handleSave = async () => {
     setSaving(true);
     setSaveError(null);
+    setConflict(false);
     setSaved(false);
     try {
-      await api.save(filename, frontmatter, body);
+      const result = await api.save(filename, frontmatter, body, hash);
+      setHash(result.hash);
       setSaved(true);
     } catch (err) {
+      if (err instanceof SaveConflictError) {
+        setConflict(true);
+      }
       setSaveError(err instanceof Error ? err.message : 'Failed to save record');
     } finally {
       setSaving(false);
@@ -80,9 +93,17 @@ export function RecordEditor({
         <button type="button" onClick={handleDelete} className="accession-btn" style={{ background: 'var(--red)' }}>
           Delete
         </button>
-        {saveError && (
+        {saveError && !conflict && (
           <p role="alert" className="text-xs font-mono" style={{ color: 'var(--red)' }}>
             {saveError}
+          </p>
+        )}
+        {conflict && (
+          <p role="alert" className="flex items-center gap-2 text-xs font-mono" style={{ color: 'var(--red)' }}>
+            {saveError}
+            <button type="button" onClick={load} className="accession-btn" style={{ background: 'var(--red)' }}>
+              Reload
+            </button>
           </p>
         )}
         {saved && (

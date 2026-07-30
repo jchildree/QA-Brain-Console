@@ -1,5 +1,5 @@
 const express = require('express');
-const { listSops, readSop, writeSop, createRecord, moveRecord } = require('../vault');
+const { listSops, readSop, writeSop, createRecord, moveRecord, ConflictError } = require('../vault');
 
 const SAFE_FILENAME = /^[A-Za-z0-9][A-Za-z0-9._-]*\.md$/;
 
@@ -29,10 +29,17 @@ function createRecordsRouter(urlSlug, idPrefix, dir, trashDir) {
     if (!isSafeFilename(req.params.filename)) {
       return res.status(400).json({ error: 'invalid filename' });
     }
-    const { frontmatter, body } = req.body;
+    const { frontmatter, body, expectedHash } = req.body;
     const stamped = req.user ? { ...frontmatter, updated_by: req.user } : frontmatter;
-    writeSop(dir, req.params.filename, stamped, body);
-    res.json({ ok: true });
+    try {
+      const { hash } = writeSop(dir, req.params.filename, stamped, body, expectedHash);
+      res.json({ ok: true, hash });
+    } catch (err) {
+      if (err instanceof ConflictError) {
+        return res.status(409).json({ error: 'record changed on disk since it was loaded' });
+      }
+      throw err;
+    }
   });
 
   router.post(`/${urlSlug}`, (req, res) => {
