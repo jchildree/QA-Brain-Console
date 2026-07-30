@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 const NAV_LINKS: { label: string; to: string }[] = [
   { label: 'Overview', to: '/' },
@@ -17,6 +18,7 @@ const NAV_LINKS: { label: string; to: string }[] = [
 const TODAY = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 'short', year: 'numeric' });
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const { username, logout } = useAuth();
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] selection:bg-[var(--gold)]/30 selection:text-[var(--ink)]">
       <div className="max-w-[1640px] mx-auto px-6 pt-6 pb-11">
@@ -26,8 +28,10 @@ export function AppShell({ children }: { children: ReactNode }) {
             <div className="sub">Register of Controlled Records &middot; {TODAY}</div>
           </div>
           <div className="masthead-right">
-            <b>Joseph Childree</b>
-            QA &middot; Quality System Owner
+            <b>{username}</b>
+            <button type="button" onClick={logout} className="masthead-logout">
+              Log out
+            </button>
           </div>
         </div>
 

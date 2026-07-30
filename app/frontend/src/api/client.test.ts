@@ -56,32 +56,33 @@ describe('extractFromText', () => {
 });
 
 describe('login', () => {
-  it('POSTs the password with credentials included', async () => {
-    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
-    await login('secret');
+  it('POSTs the username and password with credentials included, returning the username', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, username: 'alice' }) });
+    const result = await login('alice', 'secret');
     expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       credentials: 'include',
-      body: JSON.stringify({ password: 'secret' }),
+      body: JSON.stringify({ username: 'alice', password: 'secret' }),
     });
+    expect(result).toBe('alice');
   });
 
-  it('returns false for a rejected login', async () => {
+  it('returns null for a rejected login', async () => {
     (fetch as any).mockResolvedValueOnce({ ok: false });
-    expect(await login('wrong')).toBe(false);
+    expect(await login('alice', 'wrong')).toBeNull();
   });
 });
 
 describe('checkSession', () => {
-  it('returns true when /api/auth/me is 200', async () => {
-    (fetch as any).mockResolvedValueOnce({ ok: true });
-    expect(await checkSession()).toBe(true);
+  it('returns the username when /api/auth/me is 200', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true, username: 'alice' }) });
+    expect(await checkSession()).toBe('alice');
   });
 
-  it('returns false when /api/auth/me is 401', async () => {
+  it('returns null when /api/auth/me is 401', async () => {
     (fetch as any).mockResolvedValueOnce({ ok: false });
-    expect(await checkSession()).toBe(false);
+    expect(await checkSession()).toBeNull();
   });
 });
 

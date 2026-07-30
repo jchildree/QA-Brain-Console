@@ -61,19 +61,23 @@ export async function uploadAttachment(filename: string, file: File): Promise<{ 
   return res.json();
 }
 
-export async function login(password: string): Promise<boolean> {
+export async function login(username: string, password: string): Promise<string | null> {
   const res = await fetch(`${BASE_URL}/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
-    body: JSON.stringify({ password }),
+    body: JSON.stringify({ username, password }),
   });
-  return res.ok;
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.username as string;
 }
 
-export async function checkSession(): Promise<boolean> {
+export async function checkSession(): Promise<string | null> {
   const res = await fetch(`${BASE_URL}/auth/me`, { credentials: 'include' });
-  return res.ok;
+  if (!res.ok) return null;
+  const data = await res.json();
+  return data.username as string;
 }
 
 export async function logout(): Promise<void> {

@@ -93,6 +93,22 @@ body {
   font-size: 13px;
   font-family: Georgia, serif;
 }
+.masthead-logout {
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-size: 10.5px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-dim);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.masthead-logout:hover {
+  color: var(--ink);
+}
 
 /* ---------- Tabs ---------- */
 .tabs {

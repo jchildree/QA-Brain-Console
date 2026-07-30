@@ -30,13 +30,15 @@ function createRecordsRouter(urlSlug, idPrefix, dir, trashDir) {
       return res.status(400).json({ error: 'invalid filename' });
     }
     const { frontmatter, body } = req.body;
-    writeSop(dir, req.params.filename, frontmatter, body);
+    const stamped = req.user ? { ...frontmatter, updated_by: req.user } : frontmatter;
+    writeSop(dir, req.params.filename, stamped, body);
     res.json({ ok: true });
   });
 
   router.post(`/${urlSlug}`, (req, res) => {
     const { frontmatter, body } = req.body;
-    const created = createRecord(dir, idPrefix, frontmatter || {}, body || '');
+    const stamped = req.user ? { ...frontmatter, created_by: req.user } : frontmatter;
+    const created = createRecord(dir, idPrefix, stamped || {}, body || '');
     res.status(201).json(created);
   });
 

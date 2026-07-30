@@ -2,7 +2,8 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const { RECORD_TYPES, TRASH_DIR, SESSION_SECRET, AUTH_PASSWORD } = require('./config');
+const { RECORD_TYPES, TRASH_DIR, SESSION_SECRET, USERS_FILE } = require('./config');
+const { loadUsers } = require('./users');
 const { getProvider } = require('./providers');
 const { createRecordsRouter } = require('./routes/records');
 const { createIntakeRouter } = require('./routes/intake');
@@ -47,7 +48,7 @@ app.use(cookieParser());
 
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 
-app.use('/api', createAuthRouter(SESSION_SECRET, AUTH_PASSWORD));
+app.use('/api', createAuthRouter(SESSION_SECRET, USERS_FILE));
 
 const requireAuth = createRequireAuth(SESSION_SECRET);
 const provider = getProvider();
@@ -79,7 +80,9 @@ app.use((err, req, res, next) => {
 
 if (require.main === module) {
   const PORT = process.env.PORT || 4000;
-  if (!AUTH_PASSWORD) console.warn('WARNING: AUTH_PASSWORD is not set -- login will reject all attempts. Set it in .env.');
+  if (loadUsers(USERS_FILE).length === 0) {
+    console.warn(`WARNING: no users in ${USERS_FILE} -- login will reject all attempts. Run: node scripts/create-user.js <username> <password>`);
+  }
   if (!process.env.SESSION_SECRET) console.warn('WARNING: SESSION_SECRET is not set -- using an insecure default from source control. Set it in .env.');
   app.listen(PORT, () => console.log(`QA-Brain backend listening on ${PORT}`));
 }

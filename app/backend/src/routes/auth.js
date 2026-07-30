@@ -1,33 +1,27 @@
 const express = require('express');
-const crypto = require('crypto');
 const { createSessionToken } = require('../auth');
-const { COOKIE_NAME } = require('../middleware/requireAuth');
+const { verifyUser } = require('../users');
+const { COOKIE_NAME, createRequireAuth } = require('../middleware/requireAuth');
 const { createLoginRateLimit } = require('../middleware/loginRateLimit');
 
-function safeEquals(a, b) {
-  const aBuf = Buffer.from(String(a));
-  const bBuf = Buffer.from(String(b));
-  if (aBuf.length !== bBuf.length) return false;
-  return crypto.timingSafeEqual(aBuf, bBuf);
-}
-
-function createAuthRouter(secret, expectedPassword) {
+function createAuthRouter(secret, usersFile) {
   const router = express.Router();
   const loginRateLimit = createLoginRateLimit();
+  const requireAuth = createRequireAuth(secret);
 
   router.post('/auth/login', loginRateLimit, (req, res) => {
-    const { password } = req.body;
-    if (!expectedPassword || !password || !safeEquals(password, expectedPassword)) {
-      return res.status(401).json({ error: 'invalid password' });
+    const { username, password } = req.body;
+    if (!username || !verifyUser(usersFile, username, password)) {
+      return res.status(401).json({ error: 'invalid username or password' });
     }
-    const token = createSessionToken(secret);
+    const token = createSessionToken(secret, { username });
     res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
       sameSite: 'lax',
       secure: process.env.NODE_ENV === 'production',
       maxAge: 1000 * 60 * 60 * 24 * 7,
     });
-    res.json({ ok: true });
+    res.json({ ok: true, username });
   });
 
   router.post('/auth/logout', (req, res) => {
@@ -35,8 +29,8 @@ function createAuthRouter(secret, expectedPassword) {
     res.json({ ok: true });
   });
 
-  router.get('/auth/me', require('../middleware/requireAuth').createRequireAuth(secret), (req, res) => {
-    res.json({ ok: true });
+  router.get('/auth/me', requireAuth, (req, res) => {
+    res.json({ ok: true, username: req.user });
   });
 
   return router;

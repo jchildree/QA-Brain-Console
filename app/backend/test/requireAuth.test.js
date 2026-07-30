@@ -27,7 +27,7 @@ describe('requireAuth', () => {
 
   it('allows a request with a valid session cookie', async () => {
     const request = require('supertest');
-    const token = createSessionToken(SECRET);
+    const token = createSessionToken(SECRET, { username: 'alice' });
     const res = await request(makeApp()).get('/api/protected').set('Cookie', `qa_session=${token}`);
     expect(res.status).toBe(200);
   });

@@ -8,6 +8,7 @@ COPY app/backend/package.json app/backend/package-lock.json ./
 RUN npm ci --omit=dev
 
 COPY app/backend/src ./src
+COPY app/backend/scripts ./scripts
 
 ENV NODE_ENV=production
 ENV PORT=4000

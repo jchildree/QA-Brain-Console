@@ -5,9 +5,11 @@ const COOKIE_NAME = 'qa_session';
 function createRequireAuth(secret) {
   return function requireAuth(req, res, next) {
     const token = req.cookies && req.cookies[COOKIE_NAME];
-    if (!token || !verifySessionToken(token, secret)) {
+    const username = token && verifySessionToken(token, secret);
+    if (!username) {
       return res.status(401).json({ error: 'authentication required' });
     }
+    req.user = username;
     next();
   };
 }

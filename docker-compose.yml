@@ -9,6 +9,7 @@ services:
       - "4000:4000"
     volumes:
       - ./qa-brain:/srv/qa-brain
+      - qa-brain-users:/srv/app/backend/data
 
   frontend:
     build:
@@ -20,3 +21,6 @@ services:
       - "8080:80"
     depends_on:
       - backend
+
+volumes:
+  qa-brain-users:

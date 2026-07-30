@@ -22,8 +22,9 @@ Records are Markdown files with YAML frontmatter, one per document, filed under 
 ```bash
 # backend
 cd app/backend
-cp .env.example .env   # fill in SESSION_SECRET, AUTH_PASSWORD, etc.
+cp .env.example .env   # fill in SESSION_SECRET, etc.
 npm install
+node scripts/create-user.js alice hunter2   # add a login (repeatable, resets the password if alice exists)
 npm start               # http://localhost:4000
 
 # frontend, in another terminal
@@ -54,12 +55,11 @@ CI (`.github/workflows/ci.yml`) runs all three on every push and PR to `main`/`m
 
 - Set `NODE_ENV=production` and a real `SESSION_SECRET`. The backend will refuse to boot in production without one, rather than quietly falling back to a secret that's sitting in this repo's git history for anyone to read.
 - Put a TLS-terminating reverse proxy in front of the backend. It enforces HTTPS via `x-forwarded-proto` and will 403 plain HTTP on purpose. This is a feature, not a bug you get to file.
-- Auth is currently a single shared password (rate-limited, HMAC-signed session cookie). Per-user accounts with individual audit trails are a known, tracked gap, see the punch list below, not an oversight anyone is proud of.
+- Auth is per-user: named accounts with scrypt-hashed passwords in `app/backend/data/users.json` (gitignored, never commit it), rate-limited login, HMAC-signed session cookie carrying the username. Manage accounts with `node scripts/create-user.js <username> <password>` (also resets an existing user's password). Records get stamped with `created_by`/`updated_by` from the session, which is the actual audit trail a real QMS needs. There's no self-service signup or roles yet - every account has the same access, and adding one is a shell command, not a UI flow. Fine for a small trusted team; revisit if that stops being true.
 - Vault data is flat Markdown on disk. Back it up like you mean it (Obsidian Git or equivalent). If your only copy of an incident report lives on one laptop, that is itself an incident.
 
 ## Known gaps before this is fully "release it and walk away" ready
 
-- Multi-user accounts / per-user audit trail (currently one shared password for everyone with API access - fine for a small trusted team, not fine for a real audit)
 - No deployment target configured yet beyond "a machine that can run Docker Compose"
 - `react-router` has an open high-severity advisory (RSC CSRF bypass); likely not exploitable here since this is a plain client SPA, not RSC, but it's unconfirmed and worth a look before you forget it exists
 

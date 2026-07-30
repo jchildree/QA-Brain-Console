@@ -5,7 +5,7 @@ import * as client from '../api/client';
 
 describe('AuthGate', () => {
   it('renders children when the session check succeeds', async () => {
-    vi.spyOn(client, 'checkSession').mockResolvedValue(true);
+    vi.spyOn(client, 'checkSession').mockResolvedValue('alice');
     render(
       <AuthGate>
         <p>protected content</p>
@@ -15,7 +15,7 @@ describe('AuthGate', () => {
   });
 
   it('renders the login page when the session check fails', async () => {
-    vi.spyOn(client, 'checkSession').mockResolvedValue(false);
+    vi.spyOn(client, 'checkSession').mockResolvedValue(null);
     render(
       <AuthGate>
         <p>protected content</p>
