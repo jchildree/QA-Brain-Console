@@ -61,7 +61,7 @@ CI (`.github/workflows/ci.yml`) runs all three on every push and PR to `main`/`m
 ## Known gaps before this is fully "release it and walk away" ready
 
 - No deployment target configured yet beyond "a machine that can run Docker Compose"
-- `react-router` has an open high-severity advisory (RSC CSRF bypass); likely not exploitable here since this is a plain client SPA, not RSC, but it's unconfirmed and worth a look before you forget it exists
+- `react-router-dom` has an open high-severity advisory (RSC-mode server-action CSRF bypass, GHSA-qwww-vcr4-c8h2, affects >=7.12.0 <8.3.0 -- we're on 7.18.1, which is caught in that range). **Confirmed not exploitable**: the app uses plain `<BrowserRouter>` client-side routing, no `react-router/rsc` import, no server actions anywhere in the codebase for the CSRF bypass to act on. No patched release exists yet (7.18.2 is latest, still in the vulnerable range; no 8.x published) -- `npm audit fix` would only offer a downgrade to 7.11.0, which is a real regression for zero security benefit here. Leaving the dependency as-is; re-check when 8.3.0+ ships.
 
 ## A note on tone
 
