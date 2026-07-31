@@ -9,6 +9,7 @@ export const meetingBlueprint: BlueprintField[] = [
   { key: 'effective_date', label: 'Effective Date', type: 'date' },
   { key: 'review_date', label: 'Review Date', type: 'date' },
   { key: 'department', label: 'Department', type: 'select', options: ['QC', 'QA', 'IT', 'Operations'], required: true },
+  { key: 'folder', label: 'Folder', type: 'text' },
   { key: 'tags', label: 'Tags', type: 'tags' },
   { key: 'attendees', label: 'Attendees', type: 'tags' },
   { key: 'meeting_date', label: 'Meeting Date', type: 'date' },

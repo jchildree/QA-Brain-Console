@@ -71,6 +71,7 @@ export function RecordDashboard({
   const [records, setRecords] = useState<RecordSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [query, setQuery] = useState('');
+  const [folder, setFolder] = useState('');
 
   useEffect(() => {
     api
@@ -87,8 +88,13 @@ export function RecordDashboard({
 
   if (error) return <p role="alert">{error}</p>;
 
+  // Only some record types (e.g. Meeting Minutes) use a "folder" field to
+  // group records -- the filter stays hidden for types that never set it.
+  const folders = Array.from(new Set(records.map((r) => (typeof r.folder === 'string' ? r.folder : '')).filter(Boolean))).sort();
+
   const q = query.trim().toLowerCase();
-  const visible = q ? records.filter((r) => JSON.stringify(r).toLowerCase().includes(q)) : records;
+  const searched = q ? records.filter((r) => JSON.stringify(r).toLowerCase().includes(q)) : records;
+  const visible = folder ? searched.filter((r) => r.folder === folder) : searched;
 
   const controlled = visible.filter((r) => r.status !== 'Obsolete');
   const overdue = visible.filter(isOverdue);
@@ -112,6 +118,23 @@ export function RecordDashboard({
             onChange={(e) => setQuery(e.target.value)}
           />
         </label>
+        {folders.length > 0 && (
+          <label className="flex flex-col gap-1.5" style={{ minWidth: 160 }}>
+            <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>Folder</span>
+            <select
+              aria-label="Folder"
+              className="text-sm px-3 py-2 rounded-lg focus:outline-none font-mono border"
+              style={{ background: 'var(--paper-2)', borderColor: 'var(--rule)', color: 'var(--ink)' }}
+              value={folder}
+              onChange={(e) => setFolder(e.target.value)}
+            >
+              <option value="">All folders</option>
+              {folders.map((f) => (
+                <option key={f} value={f}>{f}</option>
+              ))}
+            </select>
+          </label>
+        )}
         <Link to={`/${type}/new`} className="tab-sm">
           + New {title}
         </Link>

@@ -72,4 +72,40 @@ describe('RecordDashboard', () => {
     await waitFor(() => expect(api.remove).toHaveBeenCalledWith('CAP-1.md'));
     await waitFor(() => expect(screen.queryByText('CAP-1')).not.toBeInTheDocument());
   });
+
+  it('hides the folder filter when no record has a folder set', async () => {
+    const api = makeFakeApi([
+      { id: 'CAP-1', status: 'Draft', version: '1.0', department: 'QA', review_date: '2027-01-01', owner: 'Jane', filename: 'CAP-1.md' },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <RecordDashboard api={api} title="CAP" type="cap" />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getAllByText('CAP-1').length).toBeGreaterThan(0));
+    expect(screen.queryByLabelText('Folder')).not.toBeInTheDocument();
+  });
+
+  it('filters records by folder when records have one set', async () => {
+    const api = makeFakeApi([
+      { id: 'MTG-1', status: 'Draft', version: '1.0', department: 'QA', review_date: '2027-01-01', owner: 'Jane', filename: 'MTG-1.md', folder: 'Team A' },
+      { id: 'MTG-2', status: 'Draft', version: '1.0', department: 'QA', review_date: '2027-01-01', owner: 'Jane', filename: 'MTG-2.md', folder: 'Team B' },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <RecordDashboard api={api} title="Meeting Minute" type="meeting" />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getAllByText('MTG-1').length).toBeGreaterThan(0));
+    expect(screen.getAllByText('MTG-2').length).toBeGreaterThan(0);
+
+    fireEvent.change(screen.getByLabelText('Folder'), { target: { value: 'Team A' } });
+
+    await waitFor(() => expect(screen.queryByText('MTG-2')).not.toBeInTheDocument());
+    expect(screen.getAllByText('MTG-1').length).toBeGreaterThan(0);
+  });
 });

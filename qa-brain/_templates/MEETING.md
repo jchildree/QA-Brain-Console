@@ -10,6 +10,7 @@ approved_by:
 effective_date: 
 review_date: 
 department: QA
+folder: 
 tags: []
 attendees: []
 meeting_date: <% tp.date.now("YYYY-MM-DD") %>
