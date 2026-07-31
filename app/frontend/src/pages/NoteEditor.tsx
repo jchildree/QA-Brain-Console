@@ -1,6 +1,7 @@
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RecordEditor } from '../components/RecordEditor';
-import { createRecordApi } from '../api/client';
+import { createRecordApi, listEvidence, uploadAttachment, type EvidenceFile } from '../api/client';
 import { notesBlueprint, notesBlueprintAdmin } from '../blueprint/notesBlueprint';
 import { useAuth } from '../context/AuthContext';
 
@@ -14,6 +15,75 @@ const PROMOTE_TARGETS = [
   { type: 'audit', label: 'Audit' },
   { type: 'training', label: 'Training' },
 ];
+
+// Attaching a file here as a "Source" is what populates the Evidence Library --
+// that page just scans every record type's attachments/ folder on disk, so
+// uploading through the existing generic backend route is the whole fix.
+function SourcesPanel({ filename }: { filename: string }) {
+  const [sources, setSources] = useState<EvidenceFile[] | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const load = () => {
+    listEvidence()
+      .then((all) => setSources(all.filter((f) => f.type === 'notes' && f.recordFilename === filename)))
+      .catch((err: Error) => setError(err.message));
+  };
+
+  useEffect(load, [filename]);
+
+  const handleUpload = async (file: File | undefined) => {
+    if (!file) return;
+    setUploading(true);
+    setError(null);
+    try {
+      await uploadAttachment('notes', filename, file);
+      load();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to add source');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  return (
+    <div className="rounded-xl border p-6" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
+      <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>Source</span>
+      <div className="flex flex-col gap-2 mt-2">
+        {sources && sources.length > 0 && (
+          <ul className="flex flex-col gap-1">
+            {sources.map((f) => (
+              <li key={f.attachmentFilename} className="text-sm font-mono">
+                {f.attachmentFilename}
+              </li>
+            ))}
+          </ul>
+        )}
+        {sources && sources.length === 0 && (
+          <p className="text-xs font-mono" style={{ color: 'var(--ink-dim)' }}>
+            No source attached yet.
+          </p>
+        )}
+        <label className="flex flex-col gap-1.5">
+          <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>
+            Add Source
+          </span>
+          <input
+            aria-label="Add Source"
+            type="file"
+            disabled={uploading}
+            onChange={(e) => handleUpload(e.target.files?.[0])}
+          />
+        </label>
+        {error && (
+          <p role="alert" className="text-xs font-mono" style={{ color: 'var(--red)' }}>
+            {error}
+          </p>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function NoteEditor({ filename }: { filename: string }) {
   const navigate = useNavigate();
@@ -47,6 +117,7 @@ export function NoteEditor({ filename }: { filename: string }) {
           )}
         </div>
       )}
+      renderExtra={() => <SourcesPanel filename={filename} />}
     />
   );
 }

@@ -11,12 +11,14 @@ export function RecordEditor({
   filename,
   type,
   renderExtraActions,
+  renderExtra,
 }: {
   api: ReturnType<typeof createRecordApi>;
   blueprint: BlueprintField[];
   filename: string;
   type: string;
   renderExtraActions?: (frontmatter: Record<string, unknown>, body: string) => ReactNode;
+  renderExtra?: (frontmatter: Record<string, unknown>, body: string) => ReactNode;
 }) {
   const navigate = useNavigate();
   const [frontmatter, setFrontmatter] = useState<Record<string, unknown>>({});
@@ -135,6 +137,7 @@ export function RecordEditor({
           </ul>
         </div>
       )}
+      {renderExtra?.(frontmatter, body)}
     </div>
   );
 }

@@ -114,6 +114,22 @@ describe('RecordEditor', () => {
     await waitFor(() => expect(screen.getByText('Promote CAP-1')).toBeInTheDocument());
   });
 
+  it('renders an extra block passed via renderExtra, separate from the inline actions row', async () => {
+    const api = makeFakeApi();
+    render(
+      <MemoryRouter>
+        <RecordEditor
+          api={api}
+          blueprint={capBlueprint}
+          filename="CAP-1.md"
+          type="cap"
+          renderExtra={(frontmatter) => <div>Sources for {String(frontmatter.id)}</div>}
+        />
+      </MemoryRouter>
+    );
+    await waitFor(() => expect(screen.getByText('Sources for CAP-1')).toBeInTheDocument());
+  });
+
   it('shows a Referenced By panel when other records link to this one', async () => {
     vi.spyOn(backlinksApi, 'findBacklinks').mockResolvedValue([{ type: 'sop', id: 'SOP-1', filename: 'SOP-1.md' }]);
     const api = makeFakeApi();

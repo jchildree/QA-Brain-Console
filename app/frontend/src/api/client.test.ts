@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SaveConflictError, extractFromText, login, checkSession, logout, createRecordApi, setupPassword, adminApi, listActiveUsernames } from './client';
+import { SaveConflictError, extractFromText, login, checkSession, logout, createRecordApi, setupPassword, adminApi, listActiveUsernames, listEvidence, uploadAttachment } from './client';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
@@ -117,6 +117,40 @@ describe('listActiveUsernames', () => {
     const result = await listActiveUsernames();
     expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/users/active', { credentials: 'include' });
     expect(result).toEqual(['alice', 'bob']);
+  });
+});
+
+describe('listEvidence', () => {
+  it('GETs /api/evidence', async () => {
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ type: 'notes', urlSlug: 'notes', recordFilename: 'NOTE-1.md', attachmentFilename: 'report.pdf' }],
+    });
+    const result = await listEvidence();
+    expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/evidence', { credentials: 'include' });
+    expect(result).toEqual([{ type: 'notes', urlSlug: 'notes', recordFilename: 'NOTE-1.md', attachmentFilename: 'report.pdf' }]);
+  });
+});
+
+describe('uploadAttachment', () => {
+  it('POSTs the file to the given urlSlug/filename attachments route', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ attachmentPath: 'attachments/NOTE-1/report.pdf', extracted: null, note: null }) });
+    const file = new File(['content'], 'report.pdf', { type: 'application/pdf' });
+    const result = await uploadAttachment('notes', 'NOTE-1.md', file);
+
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const [url, init] = (fetch as any).mock.calls[0];
+    expect(url).toBe('http://localhost:4000/api/notes/NOTE-1.md/attachments');
+    expect(init.method).toBe('POST');
+    expect(init.credentials).toBe('include');
+    expect(init.body.get('evidence')).toBe(file);
+    expect(result).toEqual({ attachmentPath: 'attachments/NOTE-1/report.pdf', extracted: null, note: null });
+  });
+
+  it('throws on a failed upload', async () => {
+    (fetch as any).mockResolvedValueOnce({ ok: false });
+    const file = new File(['content'], 'report.pdf');
+    await expect(uploadAttachment('notes', 'NOTE-1.md', file)).rejects.toThrow('Attachment upload failed');
   });
 });
 

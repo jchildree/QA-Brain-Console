@@ -13,6 +13,7 @@ beforeEach(() => {
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
   vi.spyOn(backlinksApi, 'findBacklinks').mockResolvedValue([]);
   vi.spyOn(client, 'listActiveUsernames').mockResolvedValue(['alice', 'bob']);
+  vi.spyOn(client, 'listEvidence').mockResolvedValue([]);
   vi.spyOn(window, 'confirm').mockReturnValue(true);
 });
 
@@ -133,5 +134,63 @@ describe('NoteEditor', () => {
         })
       )
     );
+  });
+
+  it('shows sources already attached to this note, filtered from the full evidence list', async () => {
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        filename: 'NOTE-1.md',
+        frontmatter: { id: 'NOTE-1', title: 'Meeting notes', folder: '', tags: [] },
+        body: 'body',
+        hash: 'hash-1',
+      }),
+    });
+    (client.listEvidence as any).mockResolvedValue([
+      { type: 'notes', urlSlug: 'notes', recordFilename: 'NOTE-1.md', attachmentFilename: 'report.pdf' },
+      { type: 'notes', urlSlug: 'notes', recordFilename: 'NOTE-2.md', attachmentFilename: 'other-note-file.pdf' },
+      { type: 'sop', urlSlug: 'sops', recordFilename: 'SOP-1.md', attachmentFilename: 'sop-file.pdf' },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <NoteEditor filename="NOTE-1.md" />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('report.pdf')).toBeInTheDocument());
+    expect(screen.queryByText('other-note-file.pdf')).not.toBeInTheDocument();
+    expect(screen.queryByText('sop-file.pdf')).not.toBeInTheDocument();
+  });
+
+  it('uploads a selected file as a Source and refreshes the list', async () => {
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        filename: 'NOTE-1.md',
+        frontmatter: { id: 'NOTE-1', title: 'Meeting notes', folder: '', tags: [] },
+        body: 'body',
+        hash: 'hash-1',
+      }),
+    });
+    vi.spyOn(client, 'uploadAttachment').mockResolvedValue({ attachmentPath: 'attachments/NOTE-1/report.pdf', extracted: null, note: null });
+    (client.listEvidence as any)
+      .mockResolvedValueOnce([])
+      .mockResolvedValueOnce([{ type: 'notes', urlSlug: 'notes', recordFilename: 'NOTE-1.md', attachmentFilename: 'report.pdf' }]);
+
+    render(
+      <MemoryRouter>
+        <NoteEditor filename="NOTE-1.md" />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('No source attached yet.')).toBeInTheDocument());
+
+    const file = new File(['content'], 'report.pdf', { type: 'application/pdf' });
+    fireEvent.change(screen.getByLabelText('Add Source'), { target: { files: [file] } });
+
+    await waitFor(() => expect(client.uploadAttachment).toHaveBeenCalledWith('notes', 'NOTE-1.md', file));
+    await waitFor(() => expect(screen.getByText('report.pdf')).toBeInTheDocument());
+    expect(screen.queryByText('No source attached yet.')).not.toBeInTheDocument();
   });
 });

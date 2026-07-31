@@ -29,10 +29,10 @@ export async function parseFrontmatter(rawText: string): Promise<{ frontmatter: 
   return res.json();
 }
 
-export async function uploadAttachment(filename: string, file: File): Promise<{ attachmentPath: string; extracted: Record<string, unknown> | null; note: string | null }> {
+export async function uploadAttachment(urlSlug: string, filename: string, file: File): Promise<{ attachmentPath: string; extracted: Record<string, unknown> | null; note: string | null }> {
   const formData = new FormData();
   formData.append('evidence', file);
-  const res = await fetch(`${BASE_URL}/sops/${filename}/attachments`, {
+  const res = await fetch(`${BASE_URL}/${urlSlug}/${filename}/attachments`, {
     method: 'POST',
     credentials: 'include',
     body: formData,
