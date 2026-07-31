@@ -168,18 +168,16 @@ function AccessionPanel() {
 
 export function Overview() {
   const [records, setRecords] = useState<Record<string, RecordSummary[]>>({});
-  const [error, setError] = useState<string | null>(null);
+  const [failedTypes, setFailedTypes] = useState<string[]>([]);
 
   useEffect(() => {
     RECORD_TYPES.forEach(({ type, api }) => {
       api
         .list()
         .then((list) => setRecords((prev) => ({ ...prev, [type]: list })))
-        .catch((err: Error) => setError(err.message));
+        .catch(() => setFailedTypes((prev) => (prev.includes(type) ? prev : [...prev, type])));
     });
   }, []);
-
-  if (error) return <p role="alert">{error}</p>;
 
   const all = RECORD_TYPES.flatMap(({ type, urlSlug, label }) =>
     (records[type] ?? []).map((r) => ({ record: r, type, urlSlug, label }))
@@ -199,6 +197,11 @@ export function Overview() {
 
   return (
     <div className="flex flex-col gap-6">
+      {failedTypes.length > 0 && (
+        <p role="alert" className="text-sm" style={{ color: 'var(--red)' }}>
+          Failed to load: {failedTypes.map((t) => RECORD_TYPES.find((rt) => rt.type === t)?.label ?? t).join(', ')}
+        </p>
+      )}
       <StripChart
         title="Open Records, 14-Day Trace"
         quip="the vault has a pulse -- watch it beat"
