@@ -48,6 +48,7 @@ const STAMP_COLOR_VAR: Record<string, string> = {
   'stamp-chg': '--navy-dim',
   'stamp-trn': '--ink-dim',
   'stamp-aud': '--gold',
+  'stamp-mtg': '--plum',
 };
 
 const sectionHeading: CSSProperties = {

@@ -14,6 +14,7 @@ const PROMOTE_TARGETS = [
   { type: 'change', label: 'Change' },
   { type: 'audit', label: 'Audit' },
   { type: 'training', label: 'Training' },
+  { type: 'meeting', label: 'Meeting Minutes' },
 ];
 
 // Attaching a file here as a "Source" is what populates the Evidence Library --

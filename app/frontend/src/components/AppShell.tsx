@@ -10,6 +10,7 @@ const BASE_NAV_LINKS: { label: string; to: string }[] = [
   { label: 'Change', to: '/change' },
   { label: 'Audit', to: '/audit' },
   { label: 'Training', to: '/training' },
+  { label: 'Meeting Minutes', to: '/meeting' },
   { label: 'Notes', to: '/notes' },
   { label: 'Evidence Library', to: '/evidence' },
   { label: 'Trash', to: '/trash' },

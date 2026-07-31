@@ -8,6 +8,7 @@ const DESCRIPTION_FIELDS: Record<string, string[]> = {
   change: ['change_description', 'reason_for_change'],
   audit: ['scope', 'audit_type'],
   training: ['role'],
+  meeting: ['meeting_date'],
   sop: ['department'],
 };
 

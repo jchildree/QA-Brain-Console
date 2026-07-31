@@ -8,6 +8,7 @@ const PREFIX_LABEL: Record<string, string> = {
   CHG: 'Change',
   AUD: 'Audit',
   TRN: 'Training',
+  MTG: 'Meeting Minutes',
 };
 
 function labelFor(record: RecordSummary): string {

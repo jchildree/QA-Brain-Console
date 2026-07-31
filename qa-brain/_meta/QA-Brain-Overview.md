@@ -11,7 +11,7 @@
 
 Every quality organization keeps two sets of records: the official ones, and the ones that exist in half-finished Word docs, email threads, and someone's memory. QA Brain was built to close that gap -- to give the drafting and thinking work a real home before it becomes an official record.
 
-QA Brain is a tool for drafting and managing our quality records -- SOPs, CAPAs, Incidents, Change Requests, Audits, and Training records -- in one connected workspace, before they're finalized and pushed into Intellect.
+QA Brain is a tool for drafting and managing our quality records -- SOPs, CAPAs, Incidents, Change Requests, Audits, Training records, and Meeting Minutes -- in one connected workspace, before they're finalized and pushed into Intellect.
 
 Intellect remains our official system of record. That does not change. QA Brain is the layer *before* a document becomes official -- it replaces the folder of half-finished drafts, not the QMS.
 
@@ -51,4 +51,4 @@ The only outbound call the system makes is to the Anthropic API, and only when a
 
 ## Summary
 
-Six record types, one lifecycle, one system of record downstream of all of it. The drafting work was always happening somewhere -- QA Brain gives it a structure, a login, and a timestamp.
+Seven record types, one lifecycle, one system of record downstream of all of it. The drafting work was always happening somewhere -- QA Brain gives it a structure, a login, and a timestamp.

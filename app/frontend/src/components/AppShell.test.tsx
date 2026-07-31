@@ -21,6 +21,7 @@ describe('AppShell', () => {
       ['Change', '/change'],
       ['Audit', '/audit'],
       ['Training', '/training'],
+      ['Meeting Minutes', '/meeting'],
       ['Evidence Library', '/evidence'],
       ['Settings', '/settings'],
     ];

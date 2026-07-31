@@ -86,7 +86,7 @@ export function OnboardingModal() {
         {state.step === 'orientation-types' && (
           <>
             <h2 className="text-lg font-bold" style={{ marginBottom: 12 }}>Welcome to QA-Brain</h2>
-            <p style={{ marginBottom: 8 }}>Records are organized into six controlled types:</p>
+            <p style={{ marginBottom: 8 }}>Records are organized into seven controlled types:</p>
             <ul style={{ marginBottom: 16, paddingLeft: 18, listStyle: 'disc' }}>
               <li><b>SOP</b> &mdash; standard operating procedures</li>
               <li><b>CAP</b> &mdash; corrective/preventive actions</li>
@@ -94,6 +94,7 @@ export function OnboardingModal() {
               <li><b>Change</b> &mdash; controlled change requests</li>
               <li><b>Audit</b> &mdash; internal/external audits</li>
               <li><b>Training</b> &mdash; training records</li>
+              <li><b>Meeting Minutes</b> &mdash; meeting notes and transcripts</li>
             </ul>
             <button type="button" className="accession-btn" onClick={advance}>Next</button>
           </>

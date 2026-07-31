@@ -13,6 +13,7 @@ const RECORD_TYPES = [
   { type: 'change', urlSlug: 'change', label: 'Change', colorVar: '--navy-dim', api: createRecordApi('change') },
   { type: 'audit', urlSlug: 'audit', label: 'Audit', colorVar: '--navy', api: createRecordApi('audit') },
   { type: 'training', urlSlug: 'training', label: 'Training', colorVar: '--ink-dim', api: createRecordApi('training') },
+  { type: 'meeting', urlSlug: 'meeting', label: 'Meeting Minutes', colorVar: '--plum', api: createRecordApi('meeting') },
 ];
 
 const notesApi = createRecordApi('notes');

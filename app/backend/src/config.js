@@ -15,6 +15,7 @@ const RECORD_TYPES = {
   change: { idPrefix: 'CHG', dir: vaultDir('CHANGE', process.env.VAULT_CHANGE_DIR), urlSlug: 'change' },
   audit: { idPrefix: 'AUD', dir: vaultDir('AUDIT', process.env.VAULT_AUDIT_DIR), urlSlug: 'audit' },
   training: { idPrefix: 'TRN', dir: vaultDir('TRAINING', process.env.VAULT_TRAINING_DIR), urlSlug: 'training' },
+  meeting: { idPrefix: 'MTG', dir: vaultDir('MEETING', process.env.VAULT_MEETING_DIR), urlSlug: 'meeting' },
   notes: { idPrefix: 'NOTE', dir: vaultDir('Notes', process.env.VAULT_NOTES_DIR), urlSlug: 'notes' },
 };
 

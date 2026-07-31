@@ -14,7 +14,7 @@ It also has a Notes area for free-form drafting and general note-taking that doe
 app/
   backend/    Express API, session auth, file-backed vault storage, AI-assisted intake
   frontend/   React + Vite + TypeScript console UI
-qa-brain/     The vault itself - SOP/CAP/INCIDENT/CHANGE/AUDIT/TRAINING/Notes records + Dataview dashboards
+qa-brain/     The vault itself - SOP/CAP/INCIDENT/CHANGE/AUDIT/TRAINING/MEETING/Notes records + Dataview dashboards
 ```
 
 Records are Markdown files with YAML frontmatter, one per document, filed under a strict ID scheme (`SOP-20260528-001`) and a four-state lifecycle (`Draft -> In Review -> Approved -> Obsolete`). No, you may not invent a fifth state. The Dataview dashboards will simply pretend your record doesn't exist, and they will be right to do so.

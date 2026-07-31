@@ -9,6 +9,7 @@ export const TYPES = [
   { type: 'change', urlSlug: 'change' },
   { type: 'audit', urlSlug: 'audit' },
   { type: 'training', urlSlug: 'training' },
+  { type: 'meeting', urlSlug: 'meeting' },
   { type: 'notes', urlSlug: 'notes' },
 ];
 

@@ -21,6 +21,9 @@ import { AuditIntake } from './pages/AuditIntake';
 import { TrainingDashboard } from './pages/TrainingDashboard';
 import { TrainingEditor } from './pages/TrainingEditor';
 import { TrainingIntake } from './pages/TrainingIntake';
+import { MeetingDashboard } from './pages/MeetingDashboard';
+import { MeetingEditor } from './pages/MeetingEditor';
+import { MeetingIntake } from './pages/MeetingIntake';
 import { SettingsPage } from './pages/SettingsPage';
 import { EvidenceLibraryPage } from './pages/EvidenceLibraryPage';
 import { TrashPage } from './pages/TrashPage';
@@ -67,6 +70,12 @@ function TrainingEditorRoute() {
   return <TrainingEditor filename={filename} />;
 }
 
+function MeetingEditorRoute() {
+  const { filename } = useParams<{ filename: string }>();
+  if (!filename) return null;
+  return <MeetingEditor filename={filename} />;
+}
+
 function NoteEditorRoute() {
   const { filename } = useParams<{ filename: string }>();
   if (!filename) return null;
@@ -100,6 +109,9 @@ export default function App() {
                 <Route path="/training" element={<TrainingDashboard />} />
                 <Route path="/training/new" element={<TrainingIntake />} />
                 <Route path="/training/:filename" element={<TrainingEditorRoute />} />
+                <Route path="/meeting" element={<MeetingDashboard />} />
+                <Route path="/meeting/new" element={<MeetingIntake />} />
+                <Route path="/meeting/:filename" element={<MeetingEditorRoute />} />
                 <Route path="/notes" element={<NotesDashboard />} />
                 <Route path="/notes/new" element={<NoteIntake />} />
                 <Route path="/notes/:filename" element={<NoteEditorRoute />} />

@@ -59,6 +59,16 @@ Configure these in QuickAdd settings. Each is a **Template** choice + **Capture*
 
 ---
 
+### New Meeting Minutes
+
+- **Type:** Template
+- **Template path:** `_templates/MEETING.md`
+- **File name format:** `MTG-{{DATE:YYYYMMDD}}-{{NAME}}`
+- **Folder:** `MEETING/`
+- **Open after creation:** Yes
+
+---
+
 ## Obsidian Git Setup (Governance / Audit Trail)
 
 Provides full version history — every save is a commit.
@@ -107,7 +117,7 @@ Metadata Menu lets you enforce controlled vocabulary on frontmatter fields.
 | Field | Type | Values |
 |-------|------|--------|
 | `status` | Select | Draft, In Review, Approved, Obsolete |
-| `type` | Select | SOP, CAP, INCIDENT, CHANGE, AUDIT, TRAINING |
+| `type` | Select | SOP, CAP, INCIDENT, CHANGE, AUDIT, TRAINING, MEETING |
 | `department` | Select | QC, QA, IT, Operations |
 | `effectiveness_status` | Select | Pending, Pass, Fail, N/A |
 
