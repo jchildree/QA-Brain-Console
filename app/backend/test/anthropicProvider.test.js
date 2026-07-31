@@ -70,6 +70,7 @@ describe('anthropicProvider.extractFields', () => {
     await provider.extractFields('some text');
     expect(capturedArgs.messages[0].content).toContain('title');
     expect(capturedArgs.messages[0].content).toContain('default to Draft');
+    expect(capturedArgs.messages[0].content).toContain('default to "v1"');
     expect(capturedArgs.messages[0].content).toContain('related_documents');
   });
 });

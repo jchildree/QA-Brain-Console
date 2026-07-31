@@ -3,10 +3,12 @@ import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { CapIntake } from './CapIntake';
 import * as relatedRecords from '../api/relatedRecords';
+import * as client from '../api/client';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
+  vi.spyOn(client, 'listActiveUsernames').mockResolvedValue([]);
 });
 
 describe('CapIntake', () => {

@@ -95,6 +95,26 @@ describe('RecordIntake', () => {
     expect(screen.getByLabelText('Title')).toHaveValue('Calibration drift');
   });
 
+  it('strips leading markdown heading/bold syntax from an AI-extracted title', async () => {
+    const api = makeFakeApi();
+    api.extract.mockResolvedValue({ title: '# Case: EQMS Documentation Drift', department: 'QC', tags: [] });
+    render(<RecordIntake api={api} blueprint={capBlueprint} onSave={vi.fn()} initialRawText="# Case: EQMS Documentation Drift\n\nbody" />);
+    await waitFor(() => expect(screen.getByLabelText('Title')).toHaveValue('Case: EQMS Documentation Drift'));
+  });
+
+  it('defaults version to v1 when extraction does not return one', async () => {
+    const api = makeFakeApi();
+    render(<RecordIntake api={api} blueprint={capBlueprint} onSave={vi.fn()} initialRawText="Some text." />);
+    await waitFor(() => expect(screen.getByLabelText('Version *')).toHaveValue('v1'));
+  });
+
+  it('keeps an AI-extracted version instead of the v1 default when one is provided', async () => {
+    const api = makeFakeApi();
+    api.extract.mockResolvedValue({ version: 'v3', department: 'QC', tags: [] });
+    render(<RecordIntake api={api} blueprint={capBlueprint} onSave={vi.fn()} initialRawText="Some text." />);
+    await waitFor(() => expect(screen.getByLabelText('Version *')).toHaveValue('v3'));
+  });
+
   it('re-enables Extract and shows an error instead of getting stuck when extraction fails', async () => {
     const api = makeFakeApi();
     api.extract.mockRejectedValue(new Error('AI provider unreachable'));

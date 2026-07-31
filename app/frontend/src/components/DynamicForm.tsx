@@ -60,6 +60,47 @@ function RelatedDocumentsPicker({
   );
 }
 
+// Free-text with autocomplete, not a restricted <select> like AssigneePicker --
+// the record owner is often a person who doesn't have (or need) a QA Brain
+// login, so typing an arbitrary name must stay possible.
+function OwnerPicker({
+  labelText,
+  value,
+  onChange,
+}: {
+  labelText: string;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const [usernames, setUsernames] = useState<string[]>([]);
+  const listId = `owner-options-${labelText.replace(/\s+/g, '-')}`;
+
+  useEffect(() => {
+    listActiveUsernames()
+      .then(setUsernames)
+      .catch(() => setUsernames([]));
+  }, []);
+
+  return (
+    <>
+      <input
+        aria-label={labelText}
+        list={listId}
+        className={inputClasses}
+        style={inputStyle}
+        type="text"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+      />
+      <datalist id={listId}>
+        {usernames.map((username) => (
+          <option key={username} value={username} />
+        ))}
+      </datalist>
+    </>
+  );
+}
+
 function AssigneePicker({
   labelText,
   value,
@@ -129,6 +170,12 @@ export function DynamicForm({ blueprint, values, onChange }: Props) {
                 labelText={labelText}
                 value={(values[field.key] as string) ?? ''}
                 onChange={(username) => onChange(field.key, username)}
+              />
+            ) : field.type === 'owner' ? (
+              <OwnerPicker
+                labelText={labelText}
+                value={(values[field.key] as string) ?? ''}
+                onChange={(name) => onChange(field.key, name)}
               />
             ) : field.type === 'tags' ? (
               <input

@@ -3,6 +3,12 @@ import { type createRecordApi } from '../api/client';
 import { DynamicForm } from './DynamicForm';
 import { type BlueprintField } from '../blueprint/sopBlueprint';
 
+// Defensive: the AI is told to strip markdown syntax from an extracted title,
+// but strip any leading #/* markers again here in case it doesn't comply.
+function stripMarkdownTitle(title: string): string {
+  return title.replace(/^[#*\s]+/, '').replace(/[*\s]+$/, '');
+}
+
 export function RecordIntake({
   api,
   blueprint,
@@ -35,7 +41,12 @@ export function RecordIntake({
     setExtractError(null);
     try {
       const result = await api.extract(rawText);
-      setFields((prev) => ({ ...result, title: prev.title || result.title }));
+      const extractedTitle = typeof result.title === 'string' ? stripMarkdownTitle(result.title) : result.title;
+      setFields((prev) => ({
+        ...result,
+        title: prev.title || extractedTitle,
+        version: prev.version || result.version || 'v1',
+      }));
     } catch (err) {
       setExtractError(err instanceof Error ? err.message : 'Extraction failed');
     } finally {

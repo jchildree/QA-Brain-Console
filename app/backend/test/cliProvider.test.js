@@ -28,6 +28,7 @@ describe('cliProvider.extractFields', () => {
 
     expect(capturedPrompt).toContain('title');
     expect(capturedPrompt).toContain('default to Draft');
+    expect(capturedPrompt).toContain('default to "v1"');
     expect(capturedPrompt).toContain('related_documents');
   });
 

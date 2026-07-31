@@ -73,4 +73,17 @@ describe('DynamicForm', () => {
     fireEvent.change(screen.getByLabelText('Assigned To'), { target: { value: 'alice' } });
     expect(onChange).toHaveBeenCalledWith('assigned_to', 'alice');
   });
+
+  it('offers known usernames as autocomplete for an owner field, but accepts a name that is not one of them', async () => {
+    vi.spyOn(client, 'listActiveUsernames').mockResolvedValue(['alice', 'bob']);
+    const onChange = vi.fn();
+    const ownerBlueprint: BlueprintField[] = [{ key: 'owner', label: 'Owner', type: 'owner', required: true }];
+    const { container } = render(<DynamicForm blueprint={ownerBlueprint} values={{}} onChange={onChange} />);
+
+    await waitFor(() => expect(container.querySelectorAll('datalist option')).toHaveLength(2));
+    expect(container.querySelector('datalist option[value="bob"]')).toBeInTheDocument();
+
+    fireEvent.change(screen.getByLabelText('Owner *'), { target: { value: 'Someone Not In The System' } });
+    expect(onChange).toHaveBeenCalledWith('owner', 'Someone Not In The System');
+  });
 });
