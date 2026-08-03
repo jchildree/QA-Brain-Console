@@ -1,0 +1,11 @@
+{
+    "obsidian-shellcommands:shell-command-sc_ingest": [
+        {
+            "modifiers": [
+                "Mod",
+                "Alt"
+            ],
+            "key": "I"
+        }
+    ]
+}

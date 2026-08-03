@@ -12,5 +12,6 @@
   "obsidian-linter",
   "obsidian-banners",
   "media-extended",
-  "smart-lookup"
+  "smart-lookup",
+  "obsidian-shellcommands"
 ]

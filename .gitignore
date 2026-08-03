@@ -19,3 +19,8 @@ npm-debug.log*
 .idea/
 .vscode/*
 !.vscode/extensions.json
+
+# Obsidian community plugin binaries -- install fresh from the plugin browser,
+# only track each plugin's own settings (data.json).
+**/.obsidian/plugins/*/*
+!**/.obsidian/plugins/*/data.json

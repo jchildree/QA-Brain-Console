@@ -51,7 +51,9 @@
               "type": "file-explorer",
               "state": {
                 "sortOrder": "alphabetical",
-                "autoReveal": false
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
               },
               "icon": "lucide-folder-closed",
               "title": "Files"
@@ -191,14 +193,23 @@
               "icon": "lucide-file-signature",
               "title": "Footnotes"
             }
+          },
+          {
+            "id": "d11db55eedc1215a",
+            "type": "leaf",
+            "state": {
+              "type": "SC-custom-variables-view",
+              "state": {},
+              "icon": "code-glyph",
+              "title": "Shell commands: Custom variables"
+            }
           }
         ],
-        "currentTab": 5
+        "currentTab": 7
       }
     ],
     "direction": "horizontal",
-    "width": 300,
-    "collapsed": true
+    "width": 300
   },
   "left-ribbon": {
     "hiddenItems": {
@@ -222,10 +233,11 @@
       "smart-connections:Smart Connections: Open random connection": false,
       "media-extended:Open media library": false,
       "media-extended:Open media quick switcher": false,
-      "smart-lookup:Smart Lookup: Open lookup view": false
+      "smart-lookup:Smart Lookup: Open lookup view": false,
+      "obsidian-shellcommands:Shell commands: Custom variables": false
     }
   },
-  "active": "704bd10ed3167f4a",
+  "active": "d11db55eedc1215a",
   "lastOpenFiles": [
     "INDEX.md",
     "ADR-002-console-rebuild-direction.md",

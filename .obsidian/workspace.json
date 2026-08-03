@@ -1,0 +1,235 @@
+{
+  "main": {
+    "id": "a6f6a2393a9d0c52",
+    "type": "split",
+    "children": [
+      {
+        "id": "497319aba0e72131",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "482c87f17292cadb",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/QA-Brain-Executive-Summary.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "QA-Brain-Executive-Summary"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "8b9a585e1f66ef81",
+    "type": "split",
+    "children": [
+      {
+        "id": "21ae0d0c9594773e",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "32c454771ef1a007",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "c8afbdd0c268e5e1",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "58da616d42fe74e2",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "d745fdef5a40eca7",
+    "type": "split",
+    "children": [
+      {
+        "id": "b0f8d2260314a5ef",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "43fba20645416b76",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "docs/QA-Brain-Executive-Summary.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "176983a0aeb5ce33",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "docs/QA-Brain-Executive-Summary.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "dac94f51c30cebbc",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "2b1ef4118897ca3c",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "689c5b4e2e9766ea",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "docs/QA-Brain-Executive-Summary.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          },
+          {
+            "id": "8c43f2a5ee66cf58",
+            "type": "leaf",
+            "state": {
+              "type": "footnotes",
+              "state": {
+                "file": "docs/QA-Brain-Executive-Summary.md"
+              },
+              "icon": "lucide-file-signature",
+              "title": "Footnotes"
+            }
+          }
+        ],
+        "currentTab": 5
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "obsidian-shellcommands:Shell commands: Custom variables": false,
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false,
+      "markdown-importer:Open format converter": false
+    }
+  },
+  "active": "8c43f2a5ee66cf58",
+  "lastOpenFiles": [
+    "qa-brain/Notes/NOTE-20260803-055.md",
+    "qa-brain/Notes/NOTE-20260803-054.md",
+    "qa-brain/Notes/NOTE-20260803-053.md",
+    "qa-brain/Notes/NOTE-20260803-052.md",
+    "qa-brain/Notes/NOTE-20260803-051.md",
+    "qa-brain/Notes/NOTE-20260803-050.md",
+    "qa-brain/Notes/NOTE-20260803-049.md",
+    "qa-brain/Notes/NOTE-20260803-048.md",
+    "qa-brain/Notes/NOTE-20260803-047.md",
+    "qa-brain/Notes/NOTE-20260803-046.md",
+    "qa-brain/Notes/NOTE-20260803-045.md",
+    "qa-brain/Notes/NOTE-20260803-044.md",
+    "qa-brain/Notes/NOTE-20260803-043.md",
+    "qa-brain/Notes/NOTE-20260803-042.md",
+    "qa-brain/Notes/NOTE-20260803-041.md",
+    "qa-brain/Notes/NOTE-20260803-040.md",
+    "qa-brain/Notes/NOTE-20260803-039.md",
+    "qa-brain/Notes/NOTE-20260803-038.md",
+    "qa-brain/Notes/NOTE-20260803-037.md",
+    "qa-brain/Notes/NOTE-20260803-036.md",
+    "qa-brain/Notes/NOTE-20260803-035.md",
+    "qa-brain/Notes/NOTE-20260803-034.md",
+    "qa-brain/Notes/NOTE-20260803-033.md",
+    "qa-brain/Notes/NOTE-20260803-032.md",
+    "qa-brain/Notes/NOTE-20260803-031.md",
+    "qa-brain/Notes/NOTE-20260803-030.md",
+    "qa-brain/_meta/Automation-Setup.md.tmp.12516.a12961ceebb0"
+  ]
+}
