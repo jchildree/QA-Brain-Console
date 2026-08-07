@@ -24,7 +24,7 @@ describe('ChangeDashboard', () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/change', { credentials: 'include' }));
     await waitFor(() =>
-      expect(screen.getByText((_, el) => el?.textContent === 'All Controlled Changes (1)')).toBeInTheDocument()
+      expect(screen.getByText(/Overdue for Review/)).toBeInTheDocument()
     );
   });
 });

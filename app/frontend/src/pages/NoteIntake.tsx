@@ -1,8 +1,7 @@
-import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { RecordIntake } from '../components/RecordIntake';
 import { createRecordApi } from '../api/client';
 import { notesBlueprint, notesBlueprintAdmin } from '../blueprint/notesBlueprint';
-import { DynamicForm } from '../components/DynamicForm';
 import { useAuth } from '../context/AuthContext';
 
 const notesApi = createRecordApi('notes');
@@ -12,57 +11,28 @@ export function NoteIntake() {
   const location = useLocation();
   const { isAdmin } = useAuth();
   const navState = location.state as { rawText?: string; folder?: string; title?: string } | null;
-  const [fields, setFields] = useState<Record<string, unknown>>({
-    ...(navState?.folder ? { folder: navState.folder } : {}),
-    ...(navState?.title ? { title: navState.title } : {}),
-  });
-  const [body, setBody] = useState(navState?.rawText ?? '');
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
 
-  const handleChange = (key: string, value: unknown) => {
-    setFields((prev) => ({ ...prev, [key]: value }));
-  };
+  const blueprint = isAdmin ? notesBlueprintAdmin : notesBlueprint;
 
-  const handleSave = async () => {
-    setSaving(true);
-    setSaveError(null);
-    try {
-      const created = await notesApi.create(fields, body);
-      navigate(`/notes/${created.filename}`);
-    } catch (err) {
-      setSaveError(err instanceof Error ? err.message : 'Failed to save note');
-    } finally {
-      setSaving(false);
-    }
+  // Notes have their own small controlled vocabulary -- AI extraction (which
+  // falls back to broader record fields) must not smuggle status/version/etc.
+  // onto a note, so keep only the blueprint's fields plus folder.
+  const allowedKeys = new Set([...blueprint.map((f) => f.key), 'folder']);
+
+  const handleSave = async (frontmatter: Record<string, unknown>, body: string) => {
+    const clean = Object.fromEntries(Object.entries(frontmatter).filter(([k]) => allowedKeys.has(k)));
+    const created = await notesApi.create(clean, body);
+    navigate(`/notes/${created.filename}`);
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="rounded-xl border p-6" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
-        <DynamicForm blueprint={isAdmin ? notesBlueprintAdmin : notesBlueprint} values={fields} onChange={handleChange} />
-      </div>
-      <label className="flex flex-col gap-1.5">
-        <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>Body</span>
-        <textarea
-          aria-label="Body"
-          className="text-sm px-3 py-2 rounded-lg focus:outline-none font-mono leading-relaxed border"
-          style={{ background: 'var(--paper-2)', borderColor: 'var(--rule)', color: 'var(--ink)' }}
-          value={body}
-          onChange={(e) => setBody(e.target.value)}
-          rows={20}
-        />
-      </label>
-      <div className="flex items-center gap-4">
-        <button type="button" onClick={handleSave} disabled={saving} className="accession-btn">
-          Save
-        </button>
-        {saveError && (
-          <p role="alert" className="text-xs font-mono" style={{ color: 'var(--red)' }}>
-            {saveError}
-          </p>
-        )}
-      </div>
-    </div>
+    <RecordIntake
+      api={notesApi}
+      blueprint={blueprint}
+      onSave={handleSave}
+      initialRawText={navState?.rawText}
+      initialTitle={navState?.title}
+      initialFields={navState?.folder ? { folder: navState.folder } : {}}
+    />
   );
 }

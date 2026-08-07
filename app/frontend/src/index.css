@@ -35,12 +35,46 @@
   --shadow: 0 1px 3px rgba(33, 29, 18, 0.1), 0 1px 2px rgba(33, 29, 18, 0.06);
 }
 
+/* zoom scales the whole UI (including px sizes/Tailwind), so font size actually
+   affects everything, not just font-size-inheriting text.
+   ponytail: zoom is Chromium/Edge/Electron only -- fine for this app's targets;
+   swap to a rem-based type scale if a non-Chromium browser ever matters. */
 :root[data-font-size='small'] {
+  --font-size-base: 12px;
+  zoom: 0.8;
+}
+
+:root[data-font-size='medium'] {
   --font-size-base: 14px;
+  zoom: 0.9;
 }
 
 :root[data-font-size='large'] {
+  --font-size-base: 16px;
+  zoom: 1;
+}
+
+:root[data-font-size='xlarge'] {
   --font-size-base: 18px;
+  zoom: 1.12;
+}
+
+/* High contrast: promote dim text toward full ink and darken/lighten rules. */
+:root[data-contrast='high'] {
+  --ink-dim: #cbc4a4;
+  --rule: #6a6344;
+}
+:root[data-theme='light'][data-contrast='high'] {
+  --ink-dim: #3a3524;
+  --rule: #8a7f52;
+}
+
+:root[data-reduce-motion='true'] *,
+:root[data-reduce-motion='true'] *::before,
+:root[data-reduce-motion='true'] *::after {
+  animation-duration: 0.001ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.001ms !important;
 }
 
 * {
@@ -221,6 +255,13 @@ svg#chart {
   width: 100%;
   height: 320px;
   display: block;
+}
+.metrics-summary {
+  cursor: pointer;
+  font-family: Georgia, serif;
+  font-size: 24px;
+  padding: 6px 2px;
+  border-bottom: 1px solid var(--rule);
 }
 .donut-row {
   display: flex;

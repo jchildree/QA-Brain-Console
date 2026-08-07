@@ -25,7 +25,7 @@ describe('Dashboard', () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/sops', { credentials: 'include' }));
     await waitFor(() =>
-      expect(screen.getByText((_, el) => el?.textContent === 'All Controlled SOPs (2)')).toBeInTheDocument()
+      expect(screen.getByText(/Overdue for Review/)).toBeInTheDocument()
     );
   });
 });

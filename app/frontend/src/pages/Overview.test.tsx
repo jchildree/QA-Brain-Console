@@ -83,7 +83,7 @@ describe('Overview', () => {
     selectFiles([file]);
 
     await waitFor(() => expect(screen.getByLabelText('Accession notes')).toHaveValue('Discussed the drift.'));
-    fireEvent.click(screen.getByText('Accession'));
+    fireEvent.click(screen.getByText('UPLOAD'));
 
     await waitFor(() =>
       expect(screen.getByText('note intake, rawText: Discussed the drift., folder:')).toBeInTheDocument()

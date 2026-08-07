@@ -99,8 +99,8 @@ export function RecordDashboard({
   const searched = q ? records.filter((r) => JSON.stringify(r).toLowerCase().includes(q)) : records;
   const visible = folder ? searched.filter((r) => r.folder === folder) : searched;
 
-  const controlled = visible.filter((r) => r.status !== 'Obsolete');
   const overdue = visible.filter(isOverdue);
+  const approved = visible.filter((r) => r.status === 'Approved' && !isOverdue(r));
   const inDraftOrReview = visible.filter((r) => r.status === 'Draft' || r.status === 'In Review');
   const obsolete = visible.filter((r) => r.status === 'Obsolete');
   const stamp = stampClass[title] ?? DEFAULT_STAMP;
@@ -142,49 +142,55 @@ export function RecordDashboard({
           + New {title}
         </Link>
       </div>
-      <StripChart
-        title={`${title} Register, 14-Day Trace`}
-        quip="every specimen, catalogued and dated"
-        series={[
-          {
-            label: title,
-            colorVar,
-            data: dailyCumulativeCounts(records.map((r) => r.id)),
-          },
-        ]}
-        readouts={[
-          { label: 'Total on file', value: String(records.length), direction: 'flat' },
-          { label: 'Overdue for review', value: String(overdue.length), direction: overdue.length > 0 ? 'up' : 'flat' },
-          { label: 'Draft / in review', value: String(inDraftOrReview.length), direction: 'flat' },
-          { label: 'Obsolete', value: String(obsolete.length), direction: 'down' },
-        ]}
-      />
-      <div className="chart-panel">
-        <div className="chart-head">
-          <span className="chart-title">{title} Status Breakdown</span>
-          <div className="chart-legend">
-            {STATUS_COLORS.map((s) => (
-              <span key={s.label}>
-                <i className="swatch" style={{ background: `var(${s.colorVar})` }} />
-                {s.label}
-              </span>
-            ))}
+      <details className="metrics-section" open>
+        <summary className="metrics-summary">
+          Metrics
+          <span className="chart-quip" style={{ marginLeft: 10 }}>collapse to focus on the register</span>
+        </summary>
+        <div className="flex flex-col gap-8" style={{ marginTop: 16 }}>
+          <StripChart
+            title={`${title} Register, 14-Day Trace`}
+            quip="every specimen, catalogued and dated"
+            series={[
+              {
+                label: title,
+                colorVar,
+                data: dailyCumulativeCounts(records.map((r) => r.id)),
+              },
+            ]}
+            readouts={[
+              { label: 'Total on file', value: String(records.length), direction: 'flat' },
+              { label: 'Overdue for review', value: String(overdue.length), direction: overdue.length > 0 ? 'up' : 'flat' },
+              { label: 'Draft / in review', value: String(inDraftOrReview.length), direction: 'flat' },
+              { label: 'Obsolete', value: String(obsolete.length), direction: 'down' },
+            ]}
+          />
+          <div className="chart-panel">
+            <div className="chart-head">
+              <span className="chart-title">{title} Status Breakdown</span>
+              <div className="chart-legend">
+                {STATUS_COLORS.map((s) => (
+                  <span key={s.label}>
+                    <i className="swatch" style={{ background: `var(${s.colorVar})` }} />
+                    {s.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="donut-row">
+              <DonutChart title={title} data={statusBreakdown(visible)} />
+            </div>
           </div>
+          {renderExtraCharts?.(visible)}
         </div>
-        <div className="donut-row">
-          <DonutChart title={title} data={statusBreakdown(visible)} />
-        </div>
-      </div>
-      {renderExtraCharts?.(visible)}
-      <section>
-        <h2 style={{ ...sectionHeading, color: 'var(--ink-dim)' }}>
-          All Controlled {title}s ({controlled.length})
-        </h2>
-        <CardGrid records={controlled} type={type} typeLabel={title} onDelete={handleDelete} />
-      </section>
+      </details>
       <section>
         <h2 style={{ ...sectionHeading, color: 'var(--red)' }}>Overdue for Review ({overdue.length})</h2>
         <CardGrid records={overdue} type={type} typeLabel={title} onDelete={handleDelete} />
+      </section>
+      <section>
+        <h2 style={{ ...sectionHeading, color: 'var(--teal)' }}>Approved ({approved.length})</h2>
+        <CardGrid records={approved} type={type} typeLabel={title} onDelete={handleDelete} />
       </section>
       <section>
         <h2 style={{ ...sectionHeading, color: 'var(--gold)' }}>In Draft / Review ({inDraftOrReview.length})</h2>

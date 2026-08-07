@@ -15,12 +15,14 @@ export function RecordIntake({
   onSave,
   initialRawText = '',
   initialTitle = '',
+  initialFields = {},
 }: {
   api: ReturnType<typeof createRecordApi>;
   blueprint: BlueprintField[];
   onSave: (frontmatter: Record<string, unknown>, body: string) => Promise<void>;
   initialRawText?: string;
   initialTitle?: string;
+  initialFields?: Record<string, unknown>;
 }) {
   const [rawText, setRawText] = useState(initialRawText);
   // Promoting a note (or dropping a file) carries its text over as the actual
@@ -32,7 +34,10 @@ export function RecordIntake({
   // A known-good title (a note's own title, or an uploaded file's name) beats
   // whatever the AI guesses from raw text -- extraction fills the rest of the
   // form but must not clobber this.
-  const [fields, setFields] = useState<Record<string, unknown>>(initialTitle ? { title: initialTitle } : {});
+  const [fields, setFields] = useState<Record<string, unknown>>({
+    ...initialFields,
+    ...(initialTitle ? { title: initialTitle } : {}),
+  });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 

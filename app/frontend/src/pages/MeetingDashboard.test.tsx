@@ -24,7 +24,7 @@ describe('MeetingDashboard', () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/meeting', { credentials: 'include' }));
     await waitFor(() =>
-      expect(screen.getByText((_, el) => el?.textContent === 'All Controlled Meeting Minutes (1)')).toBeInTheDocument()
+      expect(screen.getByText(/Overdue for Review/)).toBeInTheDocument()
     );
   });
 });

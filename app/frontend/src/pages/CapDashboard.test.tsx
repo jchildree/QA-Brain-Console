@@ -28,7 +28,7 @@ describe('CapDashboard', () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/cap', { credentials: 'include' }));
     await waitFor(() =>
-      expect(screen.getByText((_, el) => el?.textContent === 'All Controlled CAPs (1)')).toBeInTheDocument()
+      expect(screen.getByText(/Overdue for Review/)).toBeInTheDocument()
     );
   });
 });

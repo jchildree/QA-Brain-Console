@@ -23,7 +23,7 @@ function makeFakeApi(records: any[]) {
 }
 
 describe('RecordDashboard', () => {
-  it('groups records into controlled, overdue, in-draft-or-review, and obsolete sections', async () => {
+  it('groups records into overdue, approved, in-draft-or-review, and obsolete sections without duplication', async () => {
     const api = makeFakeApi([
       { id: 'CAP-1', status: 'Approved', version: '1.0', department: 'QA', review_date: '2026-01-01', owner: 'Jane', filename: 'CAP-1.md' },
       { id: 'CAP-2', status: 'Draft', version: '1.0', department: 'QA', review_date: '2027-01-01', owner: 'Jane', filename: 'CAP-2.md' },
@@ -36,10 +36,12 @@ describe('RecordDashboard', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => expect(screen.getByText('All Controlled CAPs (2)')).toBeInTheDocument());
-    expect(screen.getByText('Overdue for Review (1)')).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByText('Overdue for Review (1)')).toBeInTheDocument());
+    expect(screen.getByText('Approved (0)')).toBeInTheDocument();
     expect(screen.getByText('In Draft / Review (1)')).toBeInTheDocument();
     expect(screen.getByText('Obsolete CAPs (1)')).toBeInTheDocument();
+    // each record appears once (in its status section only), not duplicated
+    expect(screen.getAllByText('CAP-1')).toHaveLength(1);
   });
 
   it('shows an error message when the fetch fails', async () => {

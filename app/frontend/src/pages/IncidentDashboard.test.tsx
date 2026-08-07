@@ -24,7 +24,7 @@ describe('IncidentDashboard', () => {
 
     await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/incident', { credentials: 'include' }));
     await waitFor(() =>
-      expect(screen.getByText((_, el) => el?.textContent === 'All Controlled Incidents (1)')).toBeInTheDocument()
+      expect(screen.getByText(/Overdue for Review/)).toBeInTheDocument()
     );
   });
 });

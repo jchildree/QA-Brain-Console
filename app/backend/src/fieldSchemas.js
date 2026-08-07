@@ -6,6 +6,7 @@ const FIELD_SCHEMAS = {
   audit: 'department (one of QC, QA, IT, Operations), tags (array of strings), audit_type (one of Internal, External, Supplier), scope (short string)',
   training: 'department (one of QC, QA, IT, Operations), tags (array of strings), employee_name (short string), role (short string)',
   meeting: 'department (one of QC, QA, IT, Operations), tags (array of strings), attendees (array of strings), meeting_date (date string YYYY-MM-DD)',
+  notes: 'tags (array of strings)',
 };
 
 // Fields every record type shares, extracted the same way regardless of type

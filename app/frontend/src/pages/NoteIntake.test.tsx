@@ -10,14 +10,14 @@ beforeEach(() => {
 });
 
 describe('NoteIntake', () => {
-  it('has no raw-text/Extract step -- just the form and a body textarea', () => {
+  it('offers the AI raw-text/Extract step alongside the form and body textarea', () => {
     render(
       <MemoryRouter>
         <NoteIntake />
       </MemoryRouter>
     );
-    expect(screen.queryByLabelText('Raw notes')).not.toBeInTheDocument();
-    expect(screen.queryByText('Extract')).not.toBeInTheDocument();
+    expect(screen.getByLabelText('Raw notes')).toBeInTheDocument();
+    expect(screen.getByText('Extract')).toBeInTheDocument();
     expect(screen.getByLabelText('Title *')).toBeInTheDocument();
     expect(screen.getByLabelText('Body')).toBeInTheDocument();
   });

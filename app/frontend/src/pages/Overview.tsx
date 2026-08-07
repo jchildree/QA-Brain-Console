@@ -5,7 +5,6 @@ import { isOverdue } from '../components/RecordDashboard';
 import { RecordCard } from '../components/RecordCard';
 import { StripChart } from '../components/StripChart';
 import { DonutChart } from '../components/DonutChart';
-import { VaultGraph, type VaultNode } from '../components/VaultGraph';
 import { dailyCumulativeCounts, statusBreakdown, STATUS_COLORS, effectivenessFunnel } from '../api/chartData';
 
 const RECORD_TYPES = [
@@ -108,7 +107,7 @@ function AccessionPanel() {
 
   return (
     <div className="rail-panel">
-      <div className="rail-title">New Accession</div>
+      <div className="rail-title">New Notes/Folder</div>
       <div className="accession">
         <label
           className={`accession-drop${dragOver ? ' drag' : ''}`}
@@ -161,7 +160,7 @@ function AccessionPanel() {
           onChange={(e) => setRawText(e.target.value)}
         />
         <button type="button" className="accession-btn" disabled={!rawText.trim()} onClick={goAccession}>
-          Accession
+          UPLOAD
         </button>
       </div>
     </div>
@@ -170,9 +169,7 @@ function AccessionPanel() {
 
 export function Overview() {
   const [records, setRecords] = useState<Record<string, RecordSummary[]>>({});
-  const [notes, setNotes] = useState<RecordSummary[]>([]);
   const [failedTypes, setFailedTypes] = useState<string[]>([]);
-  const [graphOpen, setGraphOpen] = useState(false);
 
   useEffect(() => {
     RECORD_TYPES.forEach(({ type, api }) => {
@@ -181,7 +178,6 @@ export function Overview() {
         .then((list) => setRecords((prev) => ({ ...prev, [type]: list })))
         .catch(() => setFailedTypes((prev) => (prev.includes(type) ? prev : [...prev, type])));
     });
-    notesApi.list().then(setNotes).catch(() => setNotes([]));
   }, []);
 
   const all = RECORD_TYPES.flatMap(({ type, urlSlug, label }) =>
@@ -203,13 +199,6 @@ export function Overview() {
   const capEffectiveness = effectivenessFunnel(records['cap'] ?? []);
   const capCount = (label: string) => capEffectiveness.find((s) => s.label === label)?.value ?? 0;
 
-  const vaultNodes: VaultNode[] = [
-    ...RECORD_TYPES.flatMap(({ type, colorVar }) =>
-      (records[type] ?? []).map((r) => ({ id: r.id, colorVar, related_documents: r.related_documents }))
-    ),
-    ...notes.map((r) => ({ id: r.id, colorVar: '--ink-dim', related_documents: r.related_documents })),
-  ];
-
   return (
     <div className="flex flex-col gap-6">
       {failedTypes.length > 0 && (
@@ -217,68 +206,62 @@ export function Overview() {
           Failed to load: {failedTypes.map((t) => RECORD_TYPES.find((rt) => rt.type === t)?.label ?? t).join(', ')}
         </p>
       )}
-      <StripChart
-        title="Open Records, 14-Day Trace"
-        quip="the vault has a pulse -- watch it beat"
-        series={RECORD_TYPES.map(({ label, colorVar, type }) => ({
-          label,
-          colorVar,
-          data: dailyCumulativeCounts((records[type] ?? []).map((r) => r.id)),
-        }))}
-        readouts={[
-          { label: 'Total on file', value: String(totalCount), direction: 'flat' },
-          { label: 'Overdue reviews', value: String(overdue.length), direction: overdue.length > 0 ? 'up' : 'flat' },
-          { label: 'Draft / in review', value: String(draftOrReview.length), direction: 'flat' },
-          { label: 'Cross-linked', value: String(related.length), direction: 'flat' },
-        ]}
-      />
-
-      <div className="chart-panel">
-        <div className="chart-head">
-          <span className="chart-title">Status by Record Type</span>
-          <span className="chart-quip">where every drawer stands in the lifecycle</span>
-          <div className="chart-legend">
-            {STATUS_COLORS.map((s) => (
-              <span key={s.label}>
-                <i className="swatch" style={{ background: `var(${s.colorVar})` }} />
-                {s.label}
-              </span>
-            ))}
-          </div>
-        </div>
-        <div className="donut-row">
-          {RECORD_TYPES.map(({ type, label }) => (
-            <DonutChart key={type} title={label} data={statusBreakdown(records[type] ?? [])} />
-          ))}
-        </div>
-        <div className="chart-readout">
-          <div>
-            <span className="r-label">CAP Pending</span>
-            <span className="r-value r-flat">{capCount('Pending')} &#9644;</span>
-          </div>
-          <div>
-            <span className="r-label">CAP Pass</span>
-            <span className="r-value r-up">{capCount('Pass')} &#9650;</span>
-          </div>
-          <div>
-            <span className="r-label">CAP Fail</span>
-            <span className="r-value r-down">{capCount('Fail')} &#9660;</span>
-          </div>
-        </div>
-      </div>
-
-      <details className="chart-panel" onToggle={(e) => setGraphOpen((e.target as HTMLDetailsElement).open)}>
-        <summary style={{ cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 22 }}>
-          Vault Relationship Graph
-          <span className="chart-quip" style={{ marginLeft: 10 }}>
-            {vaultNodes.length} records -- expand to explore links
-          </span>
+      <details className="metrics-section" open>
+        <summary className="metrics-summary">
+          Metrics
+          <span className="chart-quip" style={{ marginLeft: 10 }}>collapse to focus on the register</span>
         </summary>
-        {graphOpen && (
-          <div style={{ marginTop: 14 }}>
-            <VaultGraph records={vaultNodes} />
+        <div className="flex flex-col gap-6" style={{ marginTop: 16 }}>
+          <StripChart
+            title="Open Records, 14-Day Trace"
+            quip="the vault has a pulse -- watch it beat"
+            series={RECORD_TYPES.map(({ label, colorVar, type }) => ({
+              label,
+              colorVar,
+              data: dailyCumulativeCounts((records[type] ?? []).map((r) => r.id)),
+            }))}
+            readouts={[
+              { label: 'Total on file', value: String(totalCount), direction: 'flat' },
+              { label: 'Overdue reviews', value: String(overdue.length), direction: overdue.length > 0 ? 'up' : 'flat' },
+              { label: 'Draft / in review', value: String(draftOrReview.length), direction: 'flat' },
+              { label: 'Cross-linked', value: String(related.length), direction: 'flat' },
+            ]}
+          />
+
+          <div className="chart-panel">
+            <div className="chart-head">
+              <span className="chart-title">Status by Record Type</span>
+              <span className="chart-quip">where every drawer stands in the lifecycle</span>
+              <div className="chart-legend">
+                {STATUS_COLORS.map((s) => (
+                  <span key={s.label}>
+                    <i className="swatch" style={{ background: `var(${s.colorVar})` }} />
+                    {s.label}
+                  </span>
+                ))}
+              </div>
+            </div>
+            <div className="donut-row">
+              {RECORD_TYPES.map(({ type, label }) => (
+                <DonutChart key={type} title={label} data={statusBreakdown(records[type] ?? [])} />
+              ))}
+            </div>
+            <div className="chart-readout">
+              <div>
+                <span className="r-label">CAP Pending</span>
+                <span className="r-value r-flat">{capCount('Pending')} &#9644;</span>
+              </div>
+              <div>
+                <span className="r-label">CAP Pass</span>
+                <span className="r-value r-up">{capCount('Pass')} &#9650;</span>
+              </div>
+              <div>
+                <span className="r-label">CAP Fail</span>
+                <span className="r-value r-down">{capCount('Fail')} &#9660;</span>
+              </div>
+            </div>
           </div>
-        )}
+        </div>
       </details>
 
       <div className="layout">
@@ -295,6 +278,8 @@ export function Overview() {
         </div>
 
         <div className="rail">
+          <AccessionPanel />
+
           <div className="rail-panel">
             <div className="rail-title">Drawers Requiring Attention</div>
             <div className="rail-body">
@@ -336,8 +321,6 @@ export function Overview() {
               )}
             </div>
           </div>
-
-          <AccessionPanel />
         </div>
       </div>
     </div>

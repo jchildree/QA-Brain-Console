@@ -13,16 +13,22 @@ export function IncidentDashboard() {
       title="Incident"
       type="incident"
       renderExtraCharts={(records) => (
-        <>
-          <ParetoChart title="Root Cause Pareto" data={paretoCounts(records, 'root_cause')} barColorVar="--red" />
-          <ParetoChart title="Severity Distribution" data={paretoCounts(records, 'severity')} barColorVar="--gold" />
-          <StripChart
-            title="Severity Mix, 14-Day Trace"
-            quip="how the severity profile builds over time"
-            series={dailySeverityTrend(records)}
-            readouts={[]}
-          />
-        </>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 22, alignItems: 'stretch' }}>
+          <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+            <ParetoChart title="Root Cause Pareto" data={paretoCounts(records, 'root_cause')} barColorVar="--red" />
+          </div>
+          <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+            <ParetoChart title="Severity Distribution" data={paretoCounts(records, 'severity')} barColorVar="--gold" />
+          </div>
+          <div style={{ flex: '1 1 320px', minWidth: 0 }}>
+            <StripChart
+              title="Severity Mix, 14-Day Trace"
+              quip="how the severity profile builds over time"
+              series={dailySeverityTrend(records)}
+              readouts={[]}
+            />
+          </div>
+        </div>
       )}
     />
   );
