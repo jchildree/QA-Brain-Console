@@ -13,8 +13,8 @@ const blueprint: BlueprintField[] = [
 
 beforeEach(() => {
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([
-    { value: 'SOP-1', label: 'SOP: SOP-1' },
-    { value: 'CAP-1', label: 'CAP: CAP-1' },
+    { value: 'SOP-1', title: 'SOP-1', label: 'SOP: SOP-1' },
+    { value: 'CAP-1', title: 'CAP-1', label: 'CAP: CAP-1' },
   ]);
 });
 
@@ -47,7 +47,7 @@ describe('DynamicForm', () => {
     expect(onChange).toHaveBeenCalledWith('tags', ['a', 'b', 'c']);
   });
 
-  it('offers known record ids as autocomplete suggestions for a related field, without restricting entry to them', async () => {
+  it('adds a picked record id as a chip, and accepts a free-typed id on Enter', async () => {
     const onChange = vi.fn();
     const relatedBlueprint: BlueprintField[] = [
       { key: 'related_documents', label: 'Related Documents', type: 'related' },
@@ -57,8 +57,27 @@ describe('DynamicForm', () => {
     await waitFor(() => expect(screen.getByText('SOP: SOP-1')).toBeInTheDocument());
     expect(screen.getByText('CAP: CAP-1')).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText('Related Documents'), { target: { value: 'SOP-1, SOP-NOT-YET-CREATED-002' } });
-    expect(onChange).toHaveBeenCalledWith('related_documents', ['SOP-1', 'SOP-NOT-YET-CREATED-002']);
+    // Picking an existing option (input set to its exact id) commits it.
+    fireEvent.change(screen.getByLabelText('Related Documents'), { target: { value: 'SOP-1' } });
+    expect(onChange).toHaveBeenCalledWith('related_documents', ['SOP-1']);
+
+    // A not-yet-created id can still be entered freely and committed on Enter.
+    const input = screen.getByLabelText('Related Documents');
+    fireEvent.change(input, { target: { value: 'SOP-NOT-YET-CREATED-002' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    expect(onChange).toHaveBeenCalledWith('related_documents', ['SOP-NOT-YET-CREATED-002']);
+  });
+
+  it('shows already-selected related ids as removable chips', async () => {
+    const onChange = vi.fn();
+    const relatedBlueprint: BlueprintField[] = [
+      { key: 'related_documents', label: 'Related Documents', type: 'related' },
+    ];
+    render(<DynamicForm blueprint={relatedBlueprint} values={{ related_documents: ['CAP-1'] }} onChange={onChange} />);
+
+    expect(screen.getByText('CAP-1')).toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Remove CAP-1'));
+    expect(onChange).toHaveBeenCalledWith('related_documents', []);
   });
 
   it('renders a single-select of active usernames for a user field', async () => {

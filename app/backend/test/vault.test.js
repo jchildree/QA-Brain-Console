@@ -49,11 +49,12 @@ describe('listSops', () => {
     expect(sops).toHaveLength(1);
   });
 
-  it('ignores markdown files with no id frontmatter (e.g. unrelated Obsidian notes)', () => {
+  it('lists markdown files with no id frontmatter, falling back to the filename as id', () => {
     fs.writeFileSync(path.join(tmpDir, 'Random Note.md'), '---\ntags: [misc]\n---\n\nnot a QA record\n', 'utf8');
     const sops = listSops(tmpDir);
-    expect(sops).toHaveLength(1);
-    expect(sops[0].id).toBe('SOP-20260101-001');
+    expect(sops).toHaveLength(2);
+    const random = sops.find((r) => r.filename === 'Random Note.md');
+    expect(random.id).toBe('Random Note');
   });
 });
 

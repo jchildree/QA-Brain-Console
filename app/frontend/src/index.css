@@ -256,6 +256,60 @@ svg#chart {
   height: 320px;
   display: block;
 }
+.graph-ctl {
+  font-family: monospace;
+  font-size: 12px;
+  min-width: 28px;
+  padding: 2px 7px;
+  border-radius: 6px;
+  border: 1px solid var(--rule);
+  background: var(--paper-2);
+  color: var(--ink);
+  cursor: pointer;
+}
+.graph-ctl:hover {
+  border-color: var(--navy);
+}
+/* When the panel goes fullscreen let the graph use the whole screen. */
+.related-graph-panel:fullscreen {
+  background: var(--paper);
+  padding: 24px;
+  overflow: auto;
+}
+.related-graph-panel:fullscreen .related-graph-viewport {
+  max-height: none;
+  height: calc(100vh - 90px);
+}
+.related-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+.related-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: monospace;
+  font-size: 12px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  background: var(--paper-2);
+  border: 1px solid var(--rule);
+  color: var(--ink);
+}
+.related-chip button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--ink-dim);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0;
+}
+.related-chip button:hover {
+  color: var(--red);
+}
 .metrics-summary {
   cursor: pointer;
   font-family: Georgia, serif;

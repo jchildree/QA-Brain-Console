@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import type { BlueprintField } from '../blueprint/sopBlueprint';
-import { fetchAllRecordOptions, type RecordOption } from '../api/relatedRecords';
+import { fetchAllRecordOptions, resetRecordOptionsCache, type RecordOption } from '../api/relatedRecords';
 import { listActiveUsernames } from '../api/client';
 
 interface Props {
@@ -26,35 +26,70 @@ function RelatedDocumentsPicker({
   onChange: (value: string[]) => void;
 }) {
   const [options, setOptions] = useState<RecordOption[]>([]);
+  const [entry, setEntry] = useState('');
   const listId = `related-documents-options-${labelText.replace(/\s+/g, '-')}`;
 
   useEffect(() => {
+    // Drop any stale session cache so records created since the app loaded show
+    // up in the dropdown -- otherwise the first fetch's list is frozen forever.
+    resetRecordOptionsCache();
     fetchAllRecordOptions()
       .then(setOptions)
       .catch(() => setOptions([]));
   }, []);
 
+  const add = (raw: string) => {
+    const id = raw.trim();
+    if (id && !value.includes(id)) onChange([...value, id]);
+    setEntry('');
+  };
+  const remove = (id: string) => onChange(value.filter((x) => x !== id));
+  const titleFor = (id: string) => options.find((o) => o.value === id)?.title ?? id;
+
   return (
     <>
+      {value.length > 0 && (
+        <div className="related-chips">
+          {value.map((id) => (
+            <span className="related-chip" key={id} title={id}>
+              {titleFor(id)}
+              <button type="button" aria-label={`Remove ${id}`} onClick={() => remove(id)}>
+                &times;
+              </button>
+            </span>
+          ))}
+        </div>
+      )}
       <input
         aria-label={labelText}
         list={listId}
         className={inputClasses}
         style={inputStyle}
         type="text"
-        value={value.join(', ')}
-        onChange={(e) =>
-          onChange(
-            e.target.value.split(',').map((s) => s.trim()).filter(Boolean)
-          )
-        }
+        placeholder="Search a record id, or type a new one and press Enter"
+        value={entry}
+        // Picking from the datalist sets the input to an exact option value --
+        // commit it straight to a chip. Free-typed ids commit on Enter.
+        onChange={(e) => {
+          const v = e.target.value;
+          if (options.some((o) => o.value === v)) add(v);
+          else setEntry(v);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            e.preventDefault();
+            add(entry);
+          }
+        }}
       />
       <datalist id={listId}>
-        {options.map((opt) => (
-          <option key={opt.value} value={opt.value}>
-            {opt.label}
-          </option>
-        ))}
+        {options
+          .filter((opt) => !value.includes(opt.value))
+          .map((opt) => (
+            <option key={opt.value} value={opt.value}>
+              {opt.label}
+            </option>
+          ))}
       </datalist>
     </>
   );

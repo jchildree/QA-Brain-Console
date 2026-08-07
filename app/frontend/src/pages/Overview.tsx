@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createRecordApi, parseFrontmatter, type RecordSummary } from '../api/client';
+import { parseRelatedSection, mergeRelated } from '../api/relatedRecords';
 import { isOverdue } from '../components/RecordDashboard';
 import { RecordCard } from '../components/RecordCard';
 import { StripChart } from '../components/StripChart';
@@ -61,7 +62,8 @@ function AccessionPanel() {
       try {
         const text = await readFileText(file);
         const { frontmatter, body } = await parseFrontmatter(text);
-        await notesApi.create({ folder, title: titleFromFilename(file.name), ...frontmatter }, body);
+        const related = mergeRelated(frontmatter.related_documents, parseRelatedSection(body));
+        await notesApi.create({ folder, title: titleFromFilename(file.name), ...frontmatter, related_documents: related }, body);
         created += 1;
       } catch {
         failed += 1;

@@ -16,9 +16,12 @@ function listSops(sopDir) {
     .map((f) => {
       const raw = fs.readFileSync(path.join(sopDir, f), 'utf8');
       const { data } = matter(raw);
-      return { ...data, filename: f };
-    })
-    .filter((record) => Boolean(record.id));
+      // Records whose frontmatter lacks an id (older/imported files) still list
+      // -- fall back to the filename so nothing silently disappears from the
+      // dashboards or the related-documents dropdown.
+      const id = data.id || f.replace(/\.md$/, '');
+      return { ...data, id, filename: f };
+    });
 }
 
 function readSop(sopDir, filename) {
