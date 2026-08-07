@@ -11,6 +11,8 @@ effective_date:
 review_date: 
 department: QA
 tags: []
+severity: 
+root_cause: 
 related_documents: []
 related_records: []
 source: internal

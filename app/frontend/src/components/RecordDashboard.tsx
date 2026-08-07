@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import type { CSSProperties } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { type RecordSummary, type createRecordApi } from '../api/client';
 import { RecordCard } from './RecordCard';
 import { StripChart } from './StripChart';
-import { dailyCumulativeCounts } from '../api/chartData';
+import { DonutChart } from './DonutChart';
+import { dailyCumulativeCounts, statusBreakdown, STATUS_COLORS } from '../api/chartData';
 import { stampClass, DEFAULT_STAMP } from '../theme';
 
 export function isOverdue(record: RecordSummary): boolean {
@@ -63,10 +64,12 @@ export function RecordDashboard({
   api,
   title,
   type,
+  renderExtraCharts,
 }: {
   api: ReturnType<typeof createRecordApi>;
   title: string;
   type: string;
+  renderExtraCharts?: (records: RecordSummary[]) => ReactNode;
 }) {
   const [records, setRecords] = useState<RecordSummary[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -156,6 +159,23 @@ export function RecordDashboard({
           { label: 'Obsolete', value: String(obsolete.length), direction: 'down' },
         ]}
       />
+      <div className="chart-panel">
+        <div className="chart-head">
+          <span className="chart-title">{title} Status Breakdown</span>
+          <div className="chart-legend">
+            {STATUS_COLORS.map((s) => (
+              <span key={s.label}>
+                <i className="swatch" style={{ background: `var(${s.colorVar})` }} />
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="donut-row">
+          <DonutChart title={title} data={statusBreakdown(visible)} />
+        </div>
+      </div>
+      {renderExtraCharts?.(visible)}
       <section>
         <h2 style={{ ...sectionHeading, color: 'var(--ink-dim)' }}>
           All Controlled {title}s ({controlled.length})

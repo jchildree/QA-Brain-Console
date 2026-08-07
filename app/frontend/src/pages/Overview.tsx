@@ -4,7 +4,9 @@ import { createRecordApi, parseFrontmatter, type RecordSummary } from '../api/cl
 import { isOverdue } from '../components/RecordDashboard';
 import { RecordCard } from '../components/RecordCard';
 import { StripChart } from '../components/StripChart';
-import { dailyCumulativeCounts } from '../api/chartData';
+import { DonutChart } from '../components/DonutChart';
+import { VaultGraph, type VaultNode } from '../components/VaultGraph';
+import { dailyCumulativeCounts, statusBreakdown, STATUS_COLORS, effectivenessFunnel } from '../api/chartData';
 
 const RECORD_TYPES = [
   { type: 'sop', urlSlug: 'sops', label: 'SOP', colorVar: '--teal', api: createRecordApi('sops') },
@@ -168,7 +170,9 @@ function AccessionPanel() {
 
 export function Overview() {
   const [records, setRecords] = useState<Record<string, RecordSummary[]>>({});
+  const [notes, setNotes] = useState<RecordSummary[]>([]);
   const [failedTypes, setFailedTypes] = useState<string[]>([]);
+  const [graphOpen, setGraphOpen] = useState(false);
 
   useEffect(() => {
     RECORD_TYPES.forEach(({ type, api }) => {
@@ -177,6 +181,7 @@ export function Overview() {
         .then((list) => setRecords((prev) => ({ ...prev, [type]: list })))
         .catch(() => setFailedTypes((prev) => (prev.includes(type) ? prev : [...prev, type])));
     });
+    notesApi.list().then(setNotes).catch(() => setNotes([]));
   }, []);
 
   const all = RECORD_TYPES.flatMap(({ type, urlSlug, label }) =>
@@ -194,6 +199,16 @@ export function Overview() {
     const docs = record.related_documents;
     return Array.isArray(docs) && docs.length > 0;
   });
+
+  const capEffectiveness = effectivenessFunnel(records['cap'] ?? []);
+  const capCount = (label: string) => capEffectiveness.find((s) => s.label === label)?.value ?? 0;
+
+  const vaultNodes: VaultNode[] = [
+    ...RECORD_TYPES.flatMap(({ type, colorVar }) =>
+      (records[type] ?? []).map((r) => ({ id: r.id, colorVar, related_documents: r.related_documents }))
+    ),
+    ...notes.map((r) => ({ id: r.id, colorVar: '--ink-dim', related_documents: r.related_documents })),
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -217,6 +232,54 @@ export function Overview() {
           { label: 'Cross-linked', value: String(related.length), direction: 'flat' },
         ]}
       />
+
+      <div className="chart-panel">
+        <div className="chart-head">
+          <span className="chart-title">Status by Record Type</span>
+          <span className="chart-quip">where every drawer stands in the lifecycle</span>
+          <div className="chart-legend">
+            {STATUS_COLORS.map((s) => (
+              <span key={s.label}>
+                <i className="swatch" style={{ background: `var(${s.colorVar})` }} />
+                {s.label}
+              </span>
+            ))}
+          </div>
+        </div>
+        <div className="donut-row">
+          {RECORD_TYPES.map(({ type, label }) => (
+            <DonutChart key={type} title={label} data={statusBreakdown(records[type] ?? [])} />
+          ))}
+        </div>
+        <div className="chart-readout">
+          <div>
+            <span className="r-label">CAP Pending</span>
+            <span className="r-value r-flat">{capCount('Pending')} &#9644;</span>
+          </div>
+          <div>
+            <span className="r-label">CAP Pass</span>
+            <span className="r-value r-up">{capCount('Pass')} &#9650;</span>
+          </div>
+          <div>
+            <span className="r-label">CAP Fail</span>
+            <span className="r-value r-down">{capCount('Fail')} &#9660;</span>
+          </div>
+        </div>
+      </div>
+
+      <details className="chart-panel" onToggle={(e) => setGraphOpen((e.target as HTMLDetailsElement).open)}>
+        <summary style={{ cursor: 'pointer', fontFamily: 'Georgia, serif', fontSize: 22 }}>
+          Vault Relationship Graph
+          <span className="chart-quip" style={{ marginLeft: 10 }}>
+            {vaultNodes.length} records -- expand to explore links
+          </span>
+        </summary>
+        {graphOpen && (
+          <div style={{ marginTop: 14 }}>
+            <VaultGraph records={vaultNodes} />
+          </div>
+        )}
+      </details>
 
       <div className="layout">
         <div className="specimen-grid">

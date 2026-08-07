@@ -1,9 +1,10 @@
 import { RecordEditor } from '../components/RecordEditor';
+import { RelatedRecordsGraph } from '../components/RelatedRecordsGraph';
 import { createRecordApi } from '../api/client';
 import { sopBlueprint } from '../blueprint/sopBlueprint';
 
 const sopApi = createRecordApi('sops');
 
 export function SopEditor({ filename }: { filename: string }) {
-  return <RecordEditor api={sopApi} blueprint={sopBlueprint} filename={filename} type="sop" />;
+  return <RecordEditor api={sopApi} blueprint={sopBlueprint} filename={filename} type="sop" renderExtra={(fm) => <RelatedRecordsGraph record={fm} />} />;
 }

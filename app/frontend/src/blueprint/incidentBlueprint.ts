@@ -12,5 +12,7 @@ export const incidentBlueprint: BlueprintField[] = [
   { key: 'tags', label: 'Tags', type: 'tags' },
   { key: 'description', label: 'Description', type: 'text' },
   { key: 'detection_method', label: 'Detection Method', type: 'text' },
+  { key: 'severity', label: 'Severity', type: 'select', options: ['Low', 'Medium', 'High', 'Critical'] },
+  { key: 'root_cause', label: 'Root Cause', type: 'text' },
   { key: 'related_documents', label: 'Related Documents', type: 'related' },
 ];
