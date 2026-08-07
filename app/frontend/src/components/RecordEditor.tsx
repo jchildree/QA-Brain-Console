@@ -4,6 +4,7 @@ import { SaveConflictError, type createRecordApi } from '../api/client';
 import { DynamicForm } from './DynamicForm';
 import { type BlueprintField } from '../blueprint/sopBlueprint';
 import { findBacklinks, type Backlink } from '../api/backlinks';
+import { parseRelatedSection, mergeRelated } from '../api/relatedRecords';
 
 export function RecordEditor({
   api,
@@ -61,7 +62,15 @@ export function RecordEditor({
     setConflict(false);
     setSaved(false);
     try {
-      const result = await api.save(filename, frontmatter, body, hash);
+      // Fold any "## Related" wikilinks from the body into related_documents,
+      // matching the intake flow -- otherwise links only in the body never
+      // reach the Related Documents field.
+      const merged = {
+        ...frontmatter,
+        related_documents: mergeRelated(frontmatter.related_documents, parseRelatedSection(body)),
+      };
+      setFrontmatter(merged);
+      const result = await api.save(filename, merged, body, hash);
       setHash(result.hash);
       setSaved(true);
     } catch (err) {
