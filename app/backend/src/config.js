@@ -21,6 +21,10 @@ const RECORD_TYPES = {
 
 const TRASH_DIR = vaultDir('To-Be-Deleted', process.env.VAULT_TRASH_DIR);
 
+// Evidence uploaded before it's attached to any record lands here. The
+// evidence listing surfaces it as "Unlinked" alongside per-record attachments.
+const UNLINKED_EVIDENCE_DIR = vaultDir(path.join('_Evidence', '_unlinked'), process.env.VAULT_UNLINKED_EVIDENCE_DIR);
+
 const INSECURE_DEFAULT_SECRET = 'dev-only-insecure-secret-change-me';
 if (process.env.NODE_ENV === 'production' && !process.env.SESSION_SECRET) {
   throw new Error('SESSION_SECRET must be set in production -- refusing to start with the insecure default.');
@@ -31,4 +35,4 @@ const USERS_FILE = process.env.AUTH_USERS_FILE
   ? path.resolve(process.env.AUTH_USERS_FILE)
   : path.resolve(__dirname, '..', 'data', 'users.json');
 
-module.exports = { SOP_DIR, RECORD_TYPES, TRASH_DIR, SESSION_SECRET, USERS_FILE };
+module.exports = { SOP_DIR, RECORD_TYPES, TRASH_DIR, UNLINKED_EVIDENCE_DIR, SESSION_SECRET, USERS_FILE };

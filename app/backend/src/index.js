@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const { RECORD_TYPES, TRASH_DIR, SESSION_SECRET, USERS_FILE } = require('./config');
+const { RECORD_TYPES, TRASH_DIR, UNLINKED_EVIDENCE_DIR, SESSION_SECRET, USERS_FILE } = require('./config');
 const { loadUsers } = require('./users');
 const { getProvider } = require('./providers');
 const { createRecordsRouter } = require('./routes/records');
@@ -79,7 +79,7 @@ app.use('/api/search', requireAuth);
 app.use('/api', createSearchRouter(RECORD_TYPES));
 
 app.use('/api/evidence', requireAuth);
-app.use('/api', createEvidenceRouter(RECORD_TYPES));
+app.use('/api', createEvidenceRouter(RECORD_TYPES, UNLINKED_EVIDENCE_DIR));
 
 app.use('/api/trash', requireAuth);
 app.use('/api', createTrashRouter(RECORD_TYPES, TRASH_DIR));

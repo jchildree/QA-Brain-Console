@@ -224,12 +224,27 @@ export function createTrashApi() {
 export interface EvidenceFile {
   type: string;
   urlSlug: string;
-  recordFilename: string;
+  recordFilename: string | null;
   attachmentFilename: string;
 }
 
 export async function listEvidence(): Promise<EvidenceFile[]> {
   const res = await fetch(`${BASE_URL}/evidence`, { credentials: 'include' });
   if (!res.ok) throw new Error('Failed to load evidence library');
+  return res.json();
+}
+
+export async function uploadUnlinkedEvidence(files: File[]): Promise<{ saved: string[] }> {
+  const formData = new FormData();
+  for (const file of files) formData.append('evidence', file);
+  const res = await fetch(`${BASE_URL}/evidence/unlinked`, {
+    method: 'POST',
+    credentials: 'include',
+    body: formData,
+  });
+  if (!res.ok) {
+    const detail = (await res.json().catch(() => ({}))).error;
+    throw new Error(detail ? `Evidence upload failed: ${detail}` : `Evidence upload failed (${res.status})`);
+  }
   return res.json();
 }

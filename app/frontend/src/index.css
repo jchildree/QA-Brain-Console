@@ -584,7 +584,7 @@ svg#chart {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 9px 0;
+  padding: 3px 0;
   border-bottom: 1px solid var(--rule);
 }
 .drawer-item:last-child {
@@ -605,7 +605,7 @@ svg#chart {
   grid-template-columns: 1fr 18px 1fr;
   align-items: center;
   gap: 6px;
-  padding: 8px 0;
+  padding: 3px 0;
   border-bottom: 1px solid var(--rule);
   font-family: ui-monospace, Consolas, monospace;
   font-size: 11px;

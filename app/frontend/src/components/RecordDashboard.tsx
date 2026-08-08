@@ -103,6 +103,10 @@ export function RecordDashboard({
   const approved = visible.filter((r) => r.status === 'Approved' && !isOverdue(r));
   const inDraftOrReview = visible.filter((r) => r.status === 'Draft' || r.status === 'In Review');
   const obsolete = visible.filter((r) => r.status === 'Obsolete');
+  // Records whose status isn't one of the 4 lifecycle buckets would otherwise
+  // render no card at all (counted but invisible) -- gather them here.
+  const shown = new Set([...overdue, ...approved, ...inDraftOrReview, ...obsolete].map((r) => r.filename));
+  const uncategorized = visible.filter((r) => !shown.has(r.filename));
   const stamp = stampClass[title] ?? DEFAULT_STAMP;
   const colorVar = STAMP_COLOR_VAR[stamp] ?? '--gold';
 
@@ -202,6 +206,14 @@ export function RecordDashboard({
         </h2>
         <CardGrid records={obsolete} type={type} typeLabel={title} onDelete={handleDelete} />
       </section>
+      {uncategorized.length > 0 && (
+        <section>
+          <h2 style={{ ...sectionHeading, color: 'var(--ink-dim)' }}>
+            Uncategorized ({uncategorized.length})
+          </h2>
+          <CardGrid records={uncategorized} type={type} typeLabel={title} onDelete={handleDelete} />
+        </section>
+      )}
     </div>
   );
 }

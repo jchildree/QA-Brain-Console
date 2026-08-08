@@ -198,6 +198,11 @@ export function Overview() {
     return Array.isArray(docs) && docs.length > 0;
   });
 
+  // Records whose status isn't one of the 4 controlled values are dropped from
+  // every per-type donut -- roll them into an "Other" bucket so nothing hides.
+  const knownStatuses = new Set(STATUS_COLORS.map(({ label }) => label));
+  const otherCount = all.filter(({ record }) => !knownStatuses.has(record.status as string)).length;
+
   const capEffectiveness = effectivenessFunnel(records['cap'] ?? []);
   const capCount = (label: string) => capEffectiveness.find((s) => s.label === label)?.value ?? 0;
 
@@ -222,47 +227,43 @@ export function Overview() {
               colorVar,
               data: dailyCumulativeCounts((records[type] ?? []).map((r) => r.id)),
             }))}
-            readouts={[
-              { label: 'Total on file', value: String(totalCount), direction: 'flat' },
-              { label: 'Overdue reviews', value: String(overdue.length), direction: overdue.length > 0 ? 'up' : 'flat' },
-              { label: 'Draft / in review', value: String(draftOrReview.length), direction: 'flat' },
-              { label: 'Cross-linked', value: String(related.length), direction: 'flat' },
-            ]}
+            footer={
+              <>
+                <div className="chart-head" style={{ marginTop: 12 }}>
+                  <span className="chart-title">Status by Record Type</span>
+                  <span className="chart-quip">where every drawer stands in the lifecycle</span>
+                  <div className="chart-legend">
+                    {STATUS_COLORS.map((s) => (
+                      <span key={s.label}>
+                        <i className="swatch" style={{ background: `var(${s.colorVar})` }} />
+                        {s.label}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+                <div className="donut-row">
+                  {RECORD_TYPES.map(({ type, label }) => (
+                    <DonutChart key={type} title={label} data={statusBreakdown(records[type] ?? [])} />
+                  ))}
+                  <DonutChart title="Other" data={[{ label: 'Uncategorized', value: otherCount, colorVar: '--ink-dim' }]} />
+                </div>
+                <div className="chart-readout">
+                  <div>
+                    <span className="r-label">CAP Pending</span>
+                    <span className="r-value r-flat">{capCount('Pending')} &#9644;</span>
+                  </div>
+                  <div>
+                    <span className="r-label">CAP Pass</span>
+                    <span className="r-value r-up">{capCount('Pass')} &#9650;</span>
+                  </div>
+                  <div>
+                    <span className="r-label">CAP Fail</span>
+                    <span className="r-value r-down">{capCount('Fail')} &#9660;</span>
+                  </div>
+                </div>
+              </>
+            }
           />
-
-          <div className="chart-panel">
-            <div className="chart-head">
-              <span className="chart-title">Status by Record Type</span>
-              <span className="chart-quip">where every drawer stands in the lifecycle</span>
-              <div className="chart-legend">
-                {STATUS_COLORS.map((s) => (
-                  <span key={s.label}>
-                    <i className="swatch" style={{ background: `var(${s.colorVar})` }} />
-                    {s.label}
-                  </span>
-                ))}
-              </div>
-            </div>
-            <div className="donut-row">
-              {RECORD_TYPES.map(({ type, label }) => (
-                <DonutChart key={type} title={label} data={statusBreakdown(records[type] ?? [])} />
-              ))}
-            </div>
-            <div className="chart-readout">
-              <div>
-                <span className="r-label">CAP Pending</span>
-                <span className="r-value r-flat">{capCount('Pending')} &#9644;</span>
-              </div>
-              <div>
-                <span className="r-label">CAP Pass</span>
-                <span className="r-value r-up">{capCount('Pass')} &#9650;</span>
-              </div>
-              <div>
-                <span className="r-label">CAP Fail</span>
-                <span className="r-value r-down">{capCount('Fail')} &#9660;</span>
-              </div>
-            </div>
-          </div>
         </div>
       </details>
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 
 export interface ChartSeries {
   label: string;
@@ -29,11 +29,13 @@ export function StripChart({
   quip,
   series,
   readouts,
+  footer,
 }: {
   title: string;
   quip: string;
   series: ChartSeries[];
-  readouts: ChartReadout[];
+  readouts?: ChartReadout[];
+  footer?: ReactNode;
 }) {
   const svgRef = useRef<SVGSVGElement>(null);
 
@@ -107,16 +109,18 @@ export function StripChart({
         </div>
       </div>
       <svg id="chart" ref={svgRef} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" />
-      <div className="chart-readout">
-        {readouts.map((r) => (
-          <div key={r.label}>
-            <span className="r-label">{r.label}</span>
-            <span className={`r-value r-${r.direction}`}>
-              {r.value} {r.direction === 'up' ? '▲' : r.direction === 'down' ? '▼' : '▬'}
-            </span>
-          </div>
-        ))}
-      </div>
+      {footer ?? (
+        <div className="chart-readout">
+          {readouts?.map((r) => (
+            <div key={r.label}>
+              <span className="r-label">{r.label}</span>
+              <span className={`r-value r-${r.direction}`}>
+                {r.value} {r.direction === 'up' ? '▲' : r.direction === 'down' ? '▼' : '▬'}
+              </span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

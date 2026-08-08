@@ -3,12 +3,12 @@ export interface ParetoDatum {
   value: number;
 }
 
-const W = 1600;
-const H = 380;
-const PAD_L = 40;
-const PAD_R = 40;
-const PAD_T = 20;
-const PAD_B = 90;
+const W = 900;
+const H = 440;
+const PAD_L = 44;
+const PAD_R = 44;
+const PAD_T = 24;
+const PAD_B = 130;
 
 // Sorted bars (descending) plus a cumulative-% line -- the classic Pareto.
 // Hand-rolled SVG so it inherits the vault's CSS custom-property colors.
@@ -57,7 +57,7 @@ export function ParetoChart({
       <div className="chart-head">
         <span className="chart-title">{title}</span>
       </div>
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" style={{ width: '100%', height: 380, display: 'block' }}>
+      <svg viewBox={`0 0 ${W} ${H}`} style={{ width: '100%', height: 'auto', display: 'block' }}>
         {[0, 0.25, 0.5, 0.75, 1].map((g) => (
           <line key={g} x1={PAD_L} y1={yPct(g)} x2={W - PAD_R} y2={yPct(g)} stroke="var(--rule)" strokeWidth={1} />
         ))}
@@ -67,14 +67,14 @@ export function ParetoChart({
           return (
             <g key={d.label}>
               <rect x={x} y={y} width={barW} height={PAD_T + plotH - y} fill={`var(${barColorVar})`} opacity={0.85} />
-              <text x={x + barW / 2} y={y - 6} textAnchor="middle" fontSize={20} fill="var(--ink)">{d.value}</text>
+              <text x={x + barW / 2} y={y - 8} textAnchor="middle" fontSize={22} fontWeight={700} fill="var(--ink)">{d.value}</text>
               <text
                 x={PAD_L + bandW * i + bandW / 2}
-                y={H - PAD_B + 26}
+                y={H - PAD_B + 28}
                 textAnchor="end"
-                fontSize={18}
+                fontSize={22}
                 fill="var(--ink-dim)"
-                transform={`rotate(-30 ${PAD_L + bandW * i + bandW / 2} ${H - PAD_B + 26})`}
+                transform={`rotate(-30 ${PAD_L + bandW * i + bandW / 2} ${H - PAD_B + 28})`}
               >
                 {d.label}
               </text>
