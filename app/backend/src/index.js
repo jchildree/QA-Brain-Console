@@ -9,6 +9,8 @@ const { createRecordsRouter } = require('./routes/records');
 const { createIntakeRouter } = require('./routes/intake');
 const { createAttachmentsRouter } = require('./routes/attachments');
 const { createSearchRouter } = require('./routes/search');
+const { createAlertsRouter } = require('./routes/alerts');
+const { createChatRouter } = require('./routes/chat');
 const { createEvidenceRouter } = require('./routes/evidence');
 const { createTrashRouter } = require('./routes/trash');
 const { createAuthRouter } = require('./routes/auth');
@@ -17,6 +19,7 @@ const { createUsersRouter } = require('./routes/users');
 const { createParseRouter } = require('./routes/parse');
 const { createRequireAuth } = require('./middleware/requireAuth');
 const { requireAdmin } = require('./middleware/requireAdmin');
+const { validateChatScope } = require('./middleware/validateChatScope');
 
 const app = express();
 
@@ -70,13 +73,19 @@ app.use('/api/intake', requireAuth);
 app.use('/api', createIntakeRouter(provider));
 
 for (const [slug, { idPrefix, dir, urlSlug }] of Object.entries(RECORD_TYPES)) {
-  app.use(`/api/${urlSlug}`, requireAuth);
+  app.use(`/api/${urlSlug}`, requireAuth, validateChatScope);
   app.use('/api', createRecordsRouter(urlSlug, idPrefix, dir, TRASH_DIR));
   app.use('/api', createAttachmentsRouter(urlSlug, dir, provider));
 }
 
 app.use('/api/search', requireAuth);
 app.use('/api', createSearchRouter(RECORD_TYPES));
+
+app.use('/api/chat', requireAuth, validateChatScope);
+app.use('/api', createChatRouter(provider, RECORD_TYPES));
+
+app.use('/api/alerts', requireAuth);
+app.use('/api', createAlertsRouter());
 
 app.use('/api/evidence', requireAuth);
 app.use('/api', createEvidenceRouter(RECORD_TYPES, UNLINKED_EVIDENCE_DIR));
