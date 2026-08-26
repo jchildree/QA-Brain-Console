@@ -17,6 +17,8 @@ const { createAuthRouter } = require('./routes/auth');
 const { createAdminRouter } = require('./routes/admin');
 const { createUsersRouter } = require('./routes/users');
 const { createParseRouter } = require('./routes/parse');
+const { createPushRouter } = require('./routes/push');
+const { initializePushService } = require('./services/pushService');
 const { createRequireAuth } = require('./middleware/requireAuth');
 const { requireAdmin } = require('./middleware/requireAdmin');
 const { validateChatScope } = require('./middleware/validateChatScope');
@@ -59,6 +61,7 @@ app.use('/api', createAuthRouter(SESSION_SECRET, USERS_FILE));
 
 const requireAuth = createRequireAuth(SESSION_SECRET, USERS_FILE);
 const provider = getProvider();
+initializePushService();
 
 app.use('/api/admin', requireAuth, requireAdmin);
 app.use('/api', createAdminRouter(USERS_FILE));
@@ -92,6 +95,9 @@ app.use('/api', createEvidenceRouter(RECORD_TYPES, UNLINKED_EVIDENCE_DIR));
 
 app.use('/api/trash', requireAuth);
 app.use('/api', createTrashRouter(RECORD_TYPES, TRASH_DIR));
+
+app.use('/api/push', requireAuth);
+app.use('/api', createPushRouter());
 
 // eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
