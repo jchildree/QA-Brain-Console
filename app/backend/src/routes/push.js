@@ -1,8 +1,53 @@
 const express = require('express');
+const fs = require('fs');
+const path = require('path');
 const { broadcastPush } = require('../services/pushService');
+const { SUBSCRIPTIONS_FILE } = require('../config');
 
-function createPushRouter() {
+function createPushRouter(subscriptionsFile = SUBSCRIPTIONS_FILE) {
   const router = express.Router();
+
+  function loadSubscriptions() {
+    try {
+      return JSON.parse(fs.readFileSync(subscriptionsFile, 'utf8'));
+    } catch {
+      return {};
+    }
+  }
+
+  function saveSubscriptions(subs) {
+    fs.mkdirSync(path.dirname(subscriptionsFile), { recursive: true });
+    fs.writeFileSync(subscriptionsFile, JSON.stringify(subs, null, 2), 'utf8');
+  }
+
+  // POST /api/push/subscribe -- persist a browser's push subscription, keyed
+  // by username, replacing any existing entry for the same endpoint.
+  router.post('/push/subscribe', (req, res) => {
+    const { subscription } = req.body || {};
+    if (!subscription || !subscription.endpoint) {
+      return res.status(400).json({ error: 'subscription must include an endpoint' });
+    }
+
+    const username = req.user;
+    if (!username) {
+      return res.status(401).json({ error: 'authentication required' });
+    }
+
+    const subs = loadSubscriptions();
+    const existing = subs[username] || [];
+    const next = existing.filter((s) => s.endpoint !== subscription.endpoint);
+    next.push(subscription);
+    subs[username] = next;
+    saveSubscriptions(subs);
+
+    res.json({ ok: true });
+  });
+
+  // POST /api/push/test -- stubbed; actual delivery reuses broadcastPush once
+  // wired up to read the caller's stored subscriptions.
+  router.post('/push/test', (req, res) => {
+    res.json({ ok: true, message: 'Test push would be sent (stubbed)' });
+  });
 
   router.post('/push/send', async (req, res) => {
     try {

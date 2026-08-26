@@ -1,4 +1,7 @@
 const express = require('express');
+const fs = require('fs');
+const os = require('os');
+const path = require('path');
 const request = require('supertest');
 const { createPushRouter } = require('../src/routes/push');
 
@@ -53,5 +56,61 @@ describe('POST /api/push/send', () => {
     expect(res.body.success).toBe(true);
     expect(res.body.summary.total).toBe(1);
     expect(res.body.summary.sent + res.body.summary.failed).toBeLessThanOrEqual(1);
+  });
+});
+
+describe('POST /api/push/subscribe', () => {
+  let subsFile;
+  let authedApp;
+
+  beforeEach(() => {
+    subsFile = path.join(os.tmpdir(), `subs-test-${Date.now()}-${Math.random()}.json`);
+    authedApp = express();
+    authedApp.use(express.json());
+    authedApp.use((req, res, next) => {
+      req.user = 'alice';
+      next();
+    });
+    authedApp.use('/api', createPushRouter(subsFile));
+  });
+
+  afterEach(() => {
+    fs.rmSync(subsFile, { force: true });
+  });
+
+  it('returns 401 without an authenticated user', async () => {
+    const res = await request(app).post('/api/push/subscribe').send({ subscription: validSub });
+    expect(res.status).toBe(401);
+  });
+
+  it('returns 400 when subscription is missing an endpoint', async () => {
+    const res = await request(authedApp).post('/api/push/subscribe').send({ subscription: { keys: validSub.keys } });
+    expect(res.status).toBe(400);
+  });
+
+  it('persists the subscription for the authenticated user', async () => {
+    const res = await request(authedApp).post('/api/push/subscribe').send({ subscription: validSub });
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
+
+    const saved = JSON.parse(fs.readFileSync(subsFile, 'utf8'));
+    expect(saved.alice).toHaveLength(1);
+    expect(saved.alice[0].endpoint).toBe(validSub.endpoint);
+  });
+
+  it('replaces an existing subscription with the same endpoint instead of duplicating it', async () => {
+    await request(authedApp).post('/api/push/subscribe').send({ subscription: validSub });
+    await request(authedApp).post('/api/push/subscribe').send({ subscription: validSub });
+
+    const saved = JSON.parse(fs.readFileSync(subsFile, 'utf8'));
+    expect(saved.alice).toHaveLength(1);
+  });
+});
+
+describe('POST /api/push/test', () => {
+  it('returns a stubbed success response', async () => {
+    const res = await request(app).post('/api/push/test').send({});
+    expect(res.status).toBe(200);
+    expect(res.body.ok).toBe(true);
   });
 });

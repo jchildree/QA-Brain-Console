@@ -46,4 +46,8 @@ const USERS_FILE = process.env.AUTH_USERS_FILE
   ? path.resolve(process.env.AUTH_USERS_FILE)
   : path.resolve(__dirname, '..', 'data', 'users.json');
 
-module.exports = { SOP_DIR, RECORD_TYPES, TRASH_DIR, UNLINKED_EVIDENCE_DIR, SESSION_SECRET, USERS_FILE, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY };
+const SUBSCRIPTIONS_FILE = process.env.PUSH_SUBSCRIPTIONS_FILE
+  ? path.resolve(process.env.PUSH_SUBSCRIPTIONS_FILE)
+  : path.resolve(__dirname, '..', 'data', 'subscriptions.json');
+
+module.exports = { SOP_DIR, RECORD_TYPES, TRASH_DIR, UNLINKED_EVIDENCE_DIR, SESSION_SECRET, USERS_FILE, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, SUBSCRIPTIONS_FILE };

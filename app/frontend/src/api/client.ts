@@ -283,6 +283,27 @@ export async function listEvidence(): Promise<EvidenceFile[]> {
   return res.json();
 }
 
+export async function subscribeToPush(subscription: PushSubscription): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch(`${BASE_URL}/push/subscribe`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ subscription: subscription.toJSON() }),
+  });
+  if (!res.ok) return { ok: false, error: await res.text() };
+  return { ok: true };
+}
+
+export async function testPush(): Promise<{ ok: boolean; error?: string }> {
+  const res = await fetch(`${BASE_URL}/push/test`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+  });
+  if (!res.ok) return { ok: false, error: await res.text() };
+  return { ok: true };
+}
+
 export async function uploadUnlinkedEvidence(files: File[]): Promise<{ saved: string[] }> {
   const formData = new FormData();
   for (const file of files) formData.append('evidence', file);
