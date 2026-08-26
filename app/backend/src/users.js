@@ -57,11 +57,23 @@ function upsertUser(usersFile, username, password, role) {
       salt,
       hash,
       role: role || existing.role || 'user',
+      email: existing.email || null,
+      emailOptIn: existing.emailOptIn ?? false,
       setupTokenHash: null,
       setupTokenExpires: null,
     };
   } else {
-    users.push({ username, salt, hash, role: role || 'user', active: true, setupTokenHash: null, setupTokenExpires: null });
+    users.push({
+      username,
+      salt,
+      hash,
+      role: role || 'user',
+      active: true,
+      email: null,
+      emailOptIn: false,
+      setupTokenHash: null,
+      setupTokenExpires: null,
+    });
   }
   saveUsers(usersFile, users);
 }
@@ -80,6 +92,8 @@ function createPendingUser(usersFile, username, role) {
     active: true,
     salt: null,
     hash: null,
+    email: null,
+    emailOptIn: false,
     setupTokenHash: hashToken(token),
     setupTokenExpires: Date.now() + SETUP_TOKEN_TTL_MS,
   });
@@ -142,7 +156,22 @@ function listUsersSafe(usersFile) {
     role: u.role || 'user',
     active: u.active !== false,
     pending: !u.hash,
+    email: u.email || null,
+    emailOptIn: u.emailOptIn ?? false,
   }));
+}
+
+// Self-service update of a user's own email digest preferences.
+function updateUserPreferences(usersFile, username, { email, emailOptIn } = {}) {
+  const users = loadUsers(usersFile);
+  const idx = users.findIndex((u) => u.username === username);
+  if (idx < 0) throw new Error(`user '${username}' not found`);
+  users[idx] = {
+    ...users[idx],
+    ...(email !== undefined ? { email } : {}),
+    ...(emailOptIn !== undefined ? { emailOptIn } : {}),
+  };
+  saveUsers(usersFile, users);
 }
 
 // Non-admin-safe listing for pickers (e.g. note assignment) -- usernames only.
@@ -165,4 +194,5 @@ module.exports = {
   updateUser,
   listUsersSafe,
   listActiveUsernames,
+  updateUserPreferences,
 };

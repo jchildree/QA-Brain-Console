@@ -50,4 +50,27 @@ const SUBSCRIPTIONS_FILE = process.env.PUSH_SUBSCRIPTIONS_FILE
   ? path.resolve(process.env.PUSH_SUBSCRIPTIONS_FILE)
   : path.resolve(__dirname, '..', 'data', 'subscriptions.json');
 
-module.exports = { SOP_DIR, RECORD_TYPES, TRASH_DIR, UNLINKED_EVIDENCE_DIR, SESSION_SECRET, USERS_FILE, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY, SUBSCRIPTIONS_FILE };
+const SMTP_HOST = process.env.SMTP_HOST;
+const SMTP_PORT = process.env.SMTP_PORT ? parseInt(process.env.SMTP_PORT, 10) : 587;
+const SMTP_USER = process.env.SMTP_USER;
+const SMTP_PASS = process.env.SMTP_PASS;
+const SMTP_FROM_EMAIL = process.env.SMTP_FROM_EMAIL || 'noreply@qa-brain.local';
+const DIGEST_SCHEDULE = process.env.DIGEST_SCHEDULE || '0 9 * * *'; // cron: 9 AM daily
+
+module.exports = {
+  SOP_DIR,
+  RECORD_TYPES,
+  TRASH_DIR,
+  UNLINKED_EVIDENCE_DIR,
+  SESSION_SECRET,
+  USERS_FILE,
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY,
+  SUBSCRIPTIONS_FILE,
+  SMTP_HOST,
+  SMTP_PORT,
+  SMTP_USER,
+  SMTP_PASS,
+  SMTP_FROM_EMAIL,
+  DIGEST_SCHEDULE,
+};

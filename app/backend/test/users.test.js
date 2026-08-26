@@ -149,8 +149,8 @@ describe('listUsersSafe / listActiveUsernames', () => {
     createPendingUser(usersFile, 'bob', 'user');
     const listed = listUsersSafe(usersFile);
     expect(listed).toEqual([
-      { username: 'alice', role: 'admin', active: true, pending: false },
-      { username: 'bob', role: 'user', active: true, pending: true },
+      { username: 'alice', role: 'admin', active: true, pending: false, email: null, emailOptIn: false },
+      { username: 'bob', role: 'user', active: true, pending: true, email: null, emailOptIn: false },
     ]);
     for (const u of listed) {
       expect(u).not.toHaveProperty('salt');

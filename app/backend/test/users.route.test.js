@@ -47,3 +47,38 @@ describe('GET /api/users/active', () => {
     expect(res.status).toBe(401);
   });
 });
+
+describe('GET/POST /api/users/me/preferences', () => {
+  it('defaults to no email and opted out', async () => {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ username: 'bob', password: 'hunter2' });
+    const res = await agent.get('/api/users/me/preferences');
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual({ email: null, emailOptIn: false });
+  });
+
+  it('sets and reads back email + opt-in', async () => {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ username: 'bob', password: 'hunter2' });
+    const post = await agent.post('/api/users/me/preferences').send({ email: 'bob@example.com', emailOptIn: true });
+    expect(post.status).toBe(200);
+    const res = await agent.get('/api/users/me/preferences');
+    expect(res.body).toEqual({ email: 'bob@example.com', emailOptIn: true });
+  });
+
+  it('does not affect another user\'s preferences', async () => {
+    const agentBob = request.agent(app);
+    await agentBob.post('/api/auth/login').send({ username: 'bob', password: 'hunter2' });
+    await agentBob.post('/api/users/me/preferences').send({ email: 'bob@example.com', emailOptIn: true });
+
+    const agentAlice = request.agent(app);
+    await agentAlice.post('/api/auth/login').send({ username: 'alice', password: 'hunter2' });
+    const res = await agentAlice.get('/api/users/me/preferences');
+    expect(res.body).toEqual({ email: null, emailOptIn: false });
+  });
+
+  it('returns 401 with no session', async () => {
+    const res = await request(app).get('/api/users/me/preferences');
+    expect(res.status).toBe(401);
+  });
+});

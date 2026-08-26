@@ -19,6 +19,8 @@ const { createUsersRouter } = require('./routes/users');
 const { createParseRouter } = require('./routes/parse');
 const { createPushRouter } = require('./routes/push');
 const { initializePushService } = require('./services/pushService');
+const { initEmailService } = require('./email');
+const { startScheduler } = require('./scheduler');
 const { createRequireAuth } = require('./middleware/requireAuth');
 const { requireAdmin } = require('./middleware/requireAdmin');
 const { validateChatScope } = require('./middleware/validateChatScope');
@@ -112,6 +114,8 @@ if (require.main === module) {
     console.warn(`WARNING: no users in ${USERS_FILE} -- login will reject all attempts. Run: node scripts/create-user.js <username> <password>`);
   }
   if (!process.env.SESSION_SECRET) console.warn('WARNING: SESSION_SECRET is not set -- using an insecure default from source control. Set it in .env.');
+  initEmailService();
+  startScheduler();
   app.listen(PORT, () => console.log(`QA-Brain backend listening on ${PORT}`));
 }
 
