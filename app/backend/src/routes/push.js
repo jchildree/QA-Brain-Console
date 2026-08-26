@@ -43,10 +43,24 @@ function createPushRouter(subscriptionsFile = SUBSCRIPTIONS_FILE) {
     res.json({ ok: true });
   });
 
-  // POST /api/push/test -- stubbed; actual delivery reuses broadcastPush once
-  // wired up to read the caller's stored subscriptions.
-  router.post('/push/test', (req, res) => {
-    res.json({ ok: true, message: 'Test push would be sent (stubbed)' });
+  router.post('/push/test', async (req, res) => {
+    const username = req.user;
+    if (!username) {
+      return res.status(401).json({ error: 'authentication required' });
+    }
+
+    const subs = loadSubscriptions();
+    const subscriptions = subs[username] || [];
+    if (subscriptions.length === 0) {
+      return res.status(400).json({ error: 'no push subscription on file' });
+    }
+
+    const results = await broadcastPush(subscriptions, {
+      title: 'QA Brain',
+      body: 'This is a test notification.',
+    });
+
+    res.json({ ok: true, sent: results.success, failed: results.failed });
   });
 
   router.post('/push/send', async (req, res) => {
