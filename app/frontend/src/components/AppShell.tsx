@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useAlerts } from '../hooks/useAlerts';
+import { ChatPanel } from './ChatPanel';
 
 const BASE_NAV_LINKS: { label: string; to: string }[] = [
   { label: 'Overview', to: '/' },
@@ -65,6 +66,8 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <main>{children}</main>
       </div>
+
+      <ChatPanel />
     </div>
   );
 }
