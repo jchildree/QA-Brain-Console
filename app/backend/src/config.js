@@ -1,5 +1,16 @@
 const path = require('path');
 
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY;
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
+
+if (process.env.NODE_ENV === 'production' && (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY)) {
+  throw new Error('VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY must be set in production -- refusing to start. Generate with: node -e "const webpush = require(\'web-push\'); const {publicKey, privateKey} = webpush.generateVAPIDKeys(); console.log(\'Public:\', publicKey); console.log(\'Private:\', privateKey);"');
+}
+
+if (!VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+  console.warn('WARNING: VAPID keys not set. Push notifications disabled. Generate and set VAPID_PUBLIC_KEY and VAPID_PRIVATE_KEY in .env.');
+}
+
 const VAULT_ROOT = path.resolve(__dirname, '..', '..', '..', 'qa-brain');
 
 function vaultDir(folder, envOverride) {
@@ -35,4 +46,4 @@ const USERS_FILE = process.env.AUTH_USERS_FILE
   ? path.resolve(process.env.AUTH_USERS_FILE)
   : path.resolve(__dirname, '..', 'data', 'users.json');
 
-module.exports = { SOP_DIR, RECORD_TYPES, TRASH_DIR, UNLINKED_EVIDENCE_DIR, SESSION_SECRET, USERS_FILE };
+module.exports = { SOP_DIR, RECORD_TYPES, TRASH_DIR, UNLINKED_EVIDENCE_DIR, SESSION_SECRET, USERS_FILE, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY };
