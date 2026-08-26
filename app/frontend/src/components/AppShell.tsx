@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useAlerts } from '../hooks/useAlerts';
 
 const BASE_NAV_LINKS: { label: string; to: string }[] = [
   { label: 'Overview', to: '/' },
@@ -21,6 +22,7 @@ const TODAY = new Date().toLocaleDateString('en-US', { day: '2-digit', month: 's
 
 export function AppShell({ children }: { children: ReactNode }) {
   const { username, isAdmin, logout } = useAuth();
+  const { alerts } = useAlerts();
   const navLinks = isAdmin ? [...BASE_NAV_LINKS, { label: 'Users', to: '/admin/users' }] : BASE_NAV_LINKS;
   return (
     <div className="min-h-screen bg-[var(--paper)] text-[var(--ink)] selection:bg-[var(--gold)]/30 selection:text-[var(--ink)]">
@@ -39,16 +41,26 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
 
         <nav className="tabs">
-          {navLinks.map((link) => (
-            <NavLink
-              key={link.to}
-              to={link.to}
-              end={link.to === '/'}
-              className={({ isActive }) => `tab${isActive ? ' active' : ''}`}
-            >
-              {link.label}
-            </NavLink>
-          ))}
+          {navLinks.map((link) => {
+            // Record-type tabs are e.g. "/sop" -- matches alert.type ("SOP") uppercased.
+            const typeKey = link.to.slice(1).toUpperCase();
+            const typeAlerts = alerts.filter((a) => a.type === typeKey);
+            const badgeCount = typeAlerts.length;
+            const hasOverdue = typeAlerts.some((a) => a.severity === 'high');
+            return (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.to === '/'}
+                className={({ isActive }) => `tab${isActive ? ' active' : ''}`}
+              >
+                {link.label}
+                {badgeCount > 0 && (
+                  <span className={`nav-badge${hasOverdue ? '' : ' nav-badge-warn'}`}>{badgeCount}</span>
+                )}
+              </NavLink>
+            );
+          })}
         </nav>
 
         <main>{children}</main>

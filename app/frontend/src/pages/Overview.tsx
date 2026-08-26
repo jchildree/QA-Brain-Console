@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { createRecordApi, parseFrontmatter, type RecordSummary } from '../api/client';
 import { parseRelatedSection, mergeRelated } from '../api/relatedRecords';
-import { isOverdue } from '../components/RecordDashboard';
 import { RecordCard } from '../components/RecordCard';
 import { StripChart } from '../components/StripChart';
 import { DonutChart } from '../components/DonutChart';
 import { dailyCumulativeCounts, statusBreakdown, STATUS_COLORS, effectivenessFunnel } from '../api/chartData';
+import { useAlerts } from '../hooks/useAlerts';
 
 const RECORD_TYPES = [
   { type: 'sop', urlSlug: 'sops', label: 'SOP', colorVar: '--teal', api: createRecordApi('sops') },
@@ -172,6 +172,7 @@ function AccessionPanel() {
 export function Overview() {
   const [records, setRecords] = useState<Record<string, RecordSummary[]>>({});
   const [failedTypes, setFailedTypes] = useState<string[]>([]);
+  const { alerts } = useAlerts();
 
   useEffect(() => {
     RECORD_TYPES.forEach(({ type, api }) => {
@@ -185,7 +186,6 @@ export function Overview() {
   const all = RECORD_TYPES.flatMap(({ type, urlSlug, label }) =>
     (records[type] ?? []).map((r) => ({ record: r, type, urlSlug, label }))
   );
-  const overdue = all.filter(({ record }) => isOverdue(record));
   const draftOrReview = all.filter(({ record }) => record.status === 'Draft' || record.status === 'In Review');
   const totalCount = all.length;
 
@@ -286,10 +286,26 @@ export function Overview() {
           <div className="rail-panel">
             <div className="rail-title">Drawers Requiring Attention</div>
             <div className="rail-body">
-              <div className="drawer-item">
-                <span>Overdue reviews</span>
-                <span className="drawer-count">{overdue.length}</span>
-              </div>
+              {alerts.length === 0 ? (
+                <p className="text-xs py-3" style={{ color: 'var(--ink-dim)' }}>
+                  No overdue or due-soon reviews.
+                </p>
+              ) : (
+                alerts.map((alert) => {
+                  const rt = RECORD_TYPES.find((r) => r.type.toUpperCase() === alert.type);
+                  const type = rt?.type ?? alert.type.toLowerCase();
+                  return (
+                    <Link
+                      key={alert.id}
+                      to={`/${type}/${alert.id}.md`}
+                      className={`drawer-item alert-row${alert.severity === 'high' ? ' alert-high' : ' alert-medium'}`}
+                    >
+                      <span>{alert.id}</span>
+                      <span className="drawer-count calm" style={{ fontSize: 11, fontWeight: 600 }}>{alert.reason}</span>
+                    </Link>
+                  );
+                })
+              )}
               <div className="drawer-item">
                 <span>Draft / in review</span>
                 <span className="drawer-count calm">{draftOrReview.length}</span>

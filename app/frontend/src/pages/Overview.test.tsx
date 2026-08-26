@@ -28,7 +28,12 @@ function mockFetchByUrl(handlers: Record<string, unknown>) {
 
 describe('Overview', () => {
   it('renders the strip chart and specimen cards for records across all types', async () => {
-    mockFetchByUrl({ '/api/sops': SOP_RECORDS });
+    mockFetchByUrl({
+      '/api/sops': SOP_RECORDS,
+      '/api/alerts': [
+        { id: 'SOP-9', type: 'SOP', urlSlug: 'sops', reason: 'SOP review overdue since 2020-01-01', dueDate: '2020-01-01', severity: 'high' },
+      ],
+    });
 
     render(
       <MemoryRouter>
@@ -39,7 +44,19 @@ describe('Overview', () => {
     expect(await screen.findByText('Open Records, 14-Day Trace')).toBeInTheDocument();
     expect(await screen.findByText('SOP-1')).toBeInTheDocument();
     expect(screen.getByText('SOP-2')).toBeInTheDocument();
-    await waitFor(() => expect(screen.getAllByText('Overdue reviews').length).toBeGreaterThan(0));
+    await waitFor(() => expect(screen.getByText('SOP review overdue since 2020-01-01')).toBeInTheDocument());
+  });
+
+  it('shows a "no alerts" message in the Drawers panel when nothing is overdue or due soon', async () => {
+    mockFetchByUrl({ '/api/sops': SOP_RECORDS, '/api/alerts': [] });
+
+    render(
+      <MemoryRouter>
+        <Overview />
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByText('No overdue or due-soon reviews.')).toBeInTheDocument();
   });
 
   it('shows an error message when a record type fails to load', async () => {
@@ -52,6 +69,27 @@ describe('Overview', () => {
     );
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent(/Failed to load/));
+  });
+
+  it('renders the other record types normally when only one type fails to load', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn((url: string) => {
+        if (url.includes('/api/incident')) return Promise.reject(new Error('Failed to load incident records'));
+        if (url.includes('/api/sops')) return Promise.resolve({ ok: true, json: async () => SOP_RECORDS });
+        return Promise.resolve({ ok: true, json: async () => [] });
+      })
+    );
+
+    render(
+      <MemoryRouter>
+        <Overview />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Incident'));
+    expect(screen.getByRole('alert')).not.toHaveTextContent('SOP');
+    expect(await screen.findByText('SOP-1')).toBeInTheDocument();
   });
 
   it('prefills raw text from a single dropped file and accessions straight to a new Note, not a fixed record type', async () => {

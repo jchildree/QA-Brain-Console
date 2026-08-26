@@ -149,6 +149,50 @@ export interface RecordDetail {
   hash: string;
 }
 
+// One overdue/due-soon/aging flag computed server-side (see backend/src/alerts.js).
+// `type` is the uppercase record-type ("SOP", "CAP", ...); `id` combined with
+// ".md" is the record's filename by convention (vault.js always names files
+// `${id}.md`).
+export interface Alert {
+  id: string;
+  type: string;
+  urlSlug: string;
+  reason: string;
+  dueDate: string;
+  severity: 'high' | 'medium' | 'low';
+}
+
+export async function fetchAlerts(): Promise<Alert[]> {
+  const res = await fetch(`${BASE_URL}/alerts`, { credentials: 'include' });
+  if (!res.ok) throw new Error('Failed to load alerts');
+  return res.json();
+}
+
+// Per-device scope restricting which record types allow chat-assisted (AI
+// intake) creates. Unset = unrestricted (all types allowed); this is the
+// default so existing behavior is unchanged until a user opts into scoping
+// via the Settings page. See ChatScopePicker.tsx.
+const CHAT_SCOPE_KEY = 'qa_brain_chat_scope';
+
+export function getChatScope(): string[] | null {
+  try {
+    const raw = localStorage.getItem(CHAT_SCOPE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+export function setChatScope(allowedTypes: string[]): void {
+  try {
+    localStorage.setItem(CHAT_SCOPE_KEY, JSON.stringify(allowedTypes));
+  } catch {
+    // localStorage unavailable (private mode, etc.) -- scope just won't persist.
+  }
+}
+
 export function createRecordApi(typeSlug: string) {
   const base = `${BASE_URL}/${typeSlug}`;
 
@@ -175,12 +219,17 @@ export function createRecordApi(typeSlug: string) {
       return res.json();
     },
     async create(frontmatter: Record<string, unknown>, body: string): Promise<RecordDetail> {
+      const allowedTypes = getChatScope();
       const res = await fetch(base, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ frontmatter, body }),
+        body: JSON.stringify(allowedTypes ? { frontmatter, body, allowedTypes } : { frontmatter, body }),
       });
+      if (res.status === 403) {
+        const detail = (await res.json().catch(() => ({}))).error;
+        throw new Error(detail || `${typeSlug} is not enabled for chat-assisted creation. Ask an admin to enable it, or create it manually via the record editor.`);
+      }
       if (!res.ok) throw new Error(`Failed to create ${typeSlug} record`);
       return res.json();
     },

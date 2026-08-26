@@ -181,6 +181,21 @@ body {
   font-weight: 800;
 }
 
+/* Overdue/due-soon count on a nav tab -- see AppShell.tsx */
+.nav-badge {
+  display: inline-block;
+  background: var(--red);
+  color: white;
+  border-radius: 12px;
+  padding: 2px 6px;
+  font-size: 11px;
+  margin-left: 6px;
+  font-weight: bold;
+}
+.nav-badge.nav-badge-warn {
+  background: var(--gold);
+}
+
 /* Smaller tab-styled pill for in-page actions (e.g. "+ New X" next to a search box) */
 .tab-sm {
   font-size: 11px;
@@ -598,6 +613,24 @@ svg#chart {
 }
 .drawer-count.calm {
   color: var(--navy-dim);
+}
+
+/* Alert row in "Drawers Requiring Attention" -- clickable link to the record */
+.drawer-item.alert-row {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+}
+.drawer-item.alert-row:hover {
+  background: var(--paper-2);
+}
+.drawer-item.alert-high span:first-child {
+  color: var(--red);
+  font-weight: 700;
+}
+.drawer-item.alert-medium span:first-child {
+  color: var(--gold);
+  font-weight: 700;
 }
 
 .xref-row {
