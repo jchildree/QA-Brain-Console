@@ -58,6 +58,20 @@ docker compose up --build
 
 Backend on `:4000`, frontend on `:8080`, vault data mounted straight from `./qa-brain` on the host, so a container restart doesn't take your CAPs with it.
 
+## Desktop shell
+
+`app/desktop/` is a thin native shell (Tauri/Rust) that makes the console launch and feel like an installed desktop app instead of a browser tab. Double-click `qa-brain-desktop.exe`: it runs `docker compose up -d --build` against the repo's `docker-compose.yml`, shows a brief loading screen while the containers come up, then loads `http://localhost:8080` in a native window (native title bar, own taskbar entry/icon, resizable). The stack keeps running in Docker after the window closes, same as if you'd started it by hand.
+
+It looks for `docker-compose.yml` by walking up from wherever the `.exe` lives; set `QA_BRAIN_COMPOSE_PATH` to point it elsewhere. No embedded UI of its own - it's a window pointed at the same Docker Compose stack, nothing duplicated.
+
+Build it (cross-compiled from Linux in Docker, so no local Rust/MSVC/UAC install needed on Windows):
+
+```bash
+docker build -f app/desktop/Dockerfile.build -o app/desktop/dist --target export .
+```
+
+Output: `app/desktop/dist/qa-brain-desktop.exe`. Rebuild after changing `app/desktop/src-tauri/src/main.rs`.
+
 ## Testing
 
 ```bash

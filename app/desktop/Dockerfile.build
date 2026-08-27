@@ -1,0 +1,25 @@
+# Cross-compiles the Windows desktop shell (.exe) from Linux, so no local
+# Rust/MSVC install or UAC-elevated installer is needed on the host.
+# Build:  docker build -f app/desktop/Dockerfile.build -o app/desktop/dist .
+FROM rust:1-bookworm
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    clang llvm nasm lld libssl-dev pkg-config ca-certificates \
+    imagemagick fonts-dejavu-core \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN rustup target add x86_64-pc-windows-msvc \
+    && cargo install cargo-xwin
+
+WORKDIR /build
+COPY app/desktop/src-tauri ./src-tauri
+WORKDIR /build/src-tauri
+
+RUN mkdir -p icons && convert -size 256x256 xc:'#0f172a' \
+    -gravity center -fill '#38bdf8' -font DejaVu-Sans-Bold -pointsize 110 \
+    -annotate 0 'QA' -depth 8 -define png:color-type=2 icons/icon.ico
+
+RUN cargo xwin build --release --target x86_64-pc-windows-msvc
+
+FROM scratch AS export
+COPY --from=0 /build/src-tauri/target/x86_64-pc-windows-msvc/release/qa-brain-desktop.exe /qa-brain-desktop.exe
