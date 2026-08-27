@@ -161,9 +161,7 @@ describe('RecordEditor', () => {
     expect(screen.getByRole('link', { name: 'SOP: SOP-1' })).toHaveAttribute('href', '/sop/SOP-1.md');
   });
 
-  // Audit finding: api.get() has no .catch() -- a rejected load leaves `loaded`
-  // false forever, so the form is stuck on "Loading..." with no error shown.
-  it('stays on the loading state (with no error) when the initial load fails', async () => {
+  it('shows an alert instead of the form when the initial load fails', async () => {
     const api = makeFakeApi();
     api.get.mockRejectedValue(new Error('Network error'));
     render(
@@ -172,9 +170,7 @@ describe('RecordEditor', () => {
       </MemoryRouter>
     );
 
-    await waitFor(() => expect(api.get).toHaveBeenCalled());
-    expect(screen.getByText('Loading…')).toBeInTheDocument();
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Network error'));
   });
 
   // Audit finding: findBacklinks() errors are swallowed with .catch(() => setBacklinks([])) --

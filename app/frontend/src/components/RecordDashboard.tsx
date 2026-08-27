@@ -85,8 +85,12 @@ export function RecordDashboard({
 
   const handleDelete = async (filename: string) => {
     if (!confirm('Move this record to Trash?')) return;
-    await api.remove(filename);
-    setRecords((prev) => prev.filter((r) => r.filename !== filename));
+    try {
+      await api.remove(filename);
+      setRecords((prev) => prev.filter((r) => r.filename !== filename));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete record.');
+    }
   };
 
   if (error) return <p role="alert">{error}</p>;

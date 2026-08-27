@@ -34,6 +34,7 @@ export function RecordEditor({
 
   const load = () => {
     setLoaded(false);
+    setSaveError(null);
     api.get(filename).then((record) => {
       setFrontmatter(record.frontmatter);
       setBody(record.body);
@@ -45,12 +46,17 @@ export function RecordEditor({
       if (typeof id === 'string') {
         findBacklinks(id).then(setBacklinks).catch(() => setBacklinks([]));
       }
+    }).catch((err) => {
+      setSaveError(err instanceof Error ? err.message : 'Failed to load record.');
     });
   };
 
   useEffect(load, [api, filename]);
 
-  if (!loaded) return <p className="text-sm font-mono" style={{ color: 'var(--ink-dim)' }}>Loading…</p>;
+  if (!loaded) {
+    if (saveError) return <p role="alert">{saveError}</p>;
+    return <p className="text-sm font-mono" style={{ color: 'var(--ink-dim)' }}>Loading…</p>;
+  }
 
   const handleChange = (key: string, value: unknown) => {
     setFrontmatter((prev) => ({ ...prev, [key]: value }));
