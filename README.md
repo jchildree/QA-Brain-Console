@@ -23,6 +23,17 @@ Records are Markdown files with YAML frontmatter, one per document, filed under 
 
 Notes (`NOTE-20260528-001`, filed under `qa-brain/Notes/`) are exempt from that lifecycle on purpose - no status, no owner, no review date. They're a scratch space: title, an optional folder field for grouping, tags, and a body. Notes can link to records (and other notes) via the same Related Documents field every record type has, and any record or note with links pointing at it shows them in a "Referenced By" panel - that's the closest thing this app has to an Obsidian backlinks pane. "Promote to..." on a note carries its body into the normal intake+AI-extraction flow for whichever record type you pick.
 
+### AI chat panel
+
+A floating chat button, mounted globally in the app shell, gives you an AI assistant (Claude, or whatever `AI_PROVIDER` you've configured) on every page. Conversations persist in the browser between visits; "Clear History" wipes them. You can tick record-type checkboxes to "scope" a conversation - right now that's an honest hint stored on the session, not yet wired into backend retrieval, so don't expect the assistant to actually filter its answers by scope yet.
+
+### Notifications and digests
+
+Two independent pieces, both off by default until you set env vars:
+
+- **Web push** - VAPID-based browser push, no third-party service. Generate a keypair (see the comment in `.env.example`), set `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY`, and users can subscribe from the frontend. Nothing in the app triggers a push automatically yet - `/api/push/test` (send yourself a test) and `/api/push/send` (broadcast an arbitrary payload) are the only wired paths. Unset the VAPID keys and the service quietly no-ops.
+- **Email digest** - a daily-by-default cron job (`DIGEST_SCHEDULE`, standard crontab syntax) emails each opted-in user a list of their vault's overdue records (past `review_date`, not yet `Obsolete`). It's a vault-wide heuristic, not filtered by ownership or department yet. Needs `SMTP_HOST`/`SMTP_PORT`/`SMTP_USER`/`SMTP_PASS`/`SMTP_FROM_EMAIL`; without SMTP configured, digests just log to the console instead of vanishing silently. Users opt in and set their email on the Settings page.
+
 ## Running it locally
 
 ```bash
@@ -87,6 +98,9 @@ CI (`.github/workflows/ci.yml`) runs all three on every push and PR to `main`/`m
 ## Known gaps before this is fully "release it and walk away" ready
 
 - `react-router-dom` has an open high-severity advisory (RSC-mode server-action CSRF bypass, GHSA-qwww-vcr4-c8h2, affects >=7.12.0 <8.3.0 -- we're on 7.18.1, which is caught in that range). **Confirmed not exploitable**: the app uses plain `<BrowserRouter>` client-side routing, no `react-router/rsc` import, no server actions anywhere in the codebase for the CSRF bypass to act on. No patched release exists yet (7.18.2 is latest, still in the vulnerable range; no 8.x published) -- `npm audit fix` would only offer a downgrade to 7.11.0, which is a real regression for zero security benefit here. Leaving the dependency as-is; re-check when 8.3.0+ ships.
+- Chat "scope" checkboxes save to the session but don't filter anything yet - the assistant sees the same context regardless of what you tick.
+- Web push has no automatic triggers - nothing in the app (not even the email digest) fires a push on its own. `/api/push/test` and `/api/push/send` exist for manual/API use only.
+- The email digest's overdue-record query is vault-wide, not scoped by ownership or department - every opted-in user gets the same list.
 
 ## A note on tone
 
