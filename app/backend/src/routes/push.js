@@ -4,6 +4,25 @@ const path = require('path');
 const { broadcastPush } = require('../services/pushService');
 const { SUBSCRIPTIONS_FILE } = require('../config');
 
+// Real browser push endpoints only ever live on these origins. Restricting to
+// this allowlist prevents /push/send from being used as an open SSRF relay
+// via an attacker-supplied endpoint URL.
+const ALLOWED_PUSH_HOSTS = [
+  'fcm.googleapis.com',
+  'updates.push.services.mozilla.com',
+  'push.apple.com',
+];
+
+function isAllowedPushEndpoint(endpoint) {
+  try {
+    const { protocol, hostname } = new URL(endpoint);
+    if (protocol !== 'https:') return false;
+    return ALLOWED_PUSH_HOSTS.some((host) => hostname === host || hostname.endsWith(`.${host}`));
+  } catch {
+    return false;
+  }
+}
+
 function createPushRouter(subscriptionsFile = SUBSCRIPTIONS_FILE) {
   const router = express.Router();
 
@@ -82,6 +101,9 @@ function createPushRouter(subscriptionsFile = SUBSCRIPTIONS_FILE) {
       for (const sub of subscriptions) {
         if (!sub.endpoint) {
           return res.status(400).json({ error: 'subscription missing endpoint' });
+        }
+        if (!isAllowedPushEndpoint(sub.endpoint)) {
+          return res.status(400).json({ error: 'subscription endpoint is not a recognized push service' });
         }
         if (!sub.keys || !sub.keys.auth || !sub.keys.p256dh) {
           return res.status(400).json({ error: 'subscription missing encryption keys' });

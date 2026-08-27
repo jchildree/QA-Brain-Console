@@ -29,13 +29,24 @@ function getOverdueRecordsForUser(username) {
   return overdue.sort((a, b) => a.review_date.localeCompare(b.review_date));
 }
 
+function escapeHtml(value) {
+  return String(value ?? '').replace(/[&<>"']/g, (ch) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#39;',
+  })[ch]);
+}
+
 function buildDigestHtml(username, overdueRecords) {
+  const safeUsername = escapeHtml(username);
   if (overdueRecords.length === 0) {
-    return `<p>No overdue records.</p><p style="color:#888;font-size:12px">QA Brain digest for ${username}.</p>`;
+    return `<p>No overdue records.</p><p style="color:#888;font-size:12px">QA Brain digest for ${safeUsername}.</p>`;
   }
-  let html = `<h2>Overdue Records for ${username}</h2><ul>`;
+  let html = `<h2>Overdue Records for ${safeUsername}</h2><ul>`;
   overdueRecords.forEach((rec) => {
-    html += `<li><strong>[${rec.type}]</strong> ${rec.id}: ${rec.title || rec.filename} (due ${rec.review_date})</li>`;
+    html += `<li><strong>[${escapeHtml(rec.type)}]</strong> ${escapeHtml(rec.id)}: ${escapeHtml(rec.title || rec.filename)} (due ${escapeHtml(rec.review_date)})</li>`;
   });
   html += `</ul><p style="color:#888;font-size:12px">QA Brain -- this is an automated digest. To stop receiving it, disable email digests in your account preferences.</p>`;
   return html;
