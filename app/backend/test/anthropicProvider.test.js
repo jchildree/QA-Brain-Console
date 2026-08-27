@@ -74,3 +74,39 @@ describe('anthropicProvider.extractFields', () => {
     expect(capturedArgs.messages[0].content).toContain('related_documents');
   });
 });
+
+describe('anthropicProvider.chat', () => {
+  it('passes messages and tools through to client.messages.create', async () => {
+    let capturedArgs;
+    const fakeClient = {
+      messages: {
+        create: async (args) => {
+          capturedArgs = args;
+          return { content: [{ type: 'text', text: 'hello' }] };
+        },
+      },
+    };
+    const provider = createAnthropicProvider(fakeClient);
+    const messages = [{ role: 'user', content: 'hi' }];
+    const tools = [{ name: 'search', description: 'd', input_schema: {} }];
+
+    const result = await provider.chat(messages, tools);
+
+    expect(capturedArgs.messages).toBe(messages);
+    expect(capturedArgs.tools).toBe(tools);
+    expect(capturedArgs.model).toBe('claude-sonnet-5');
+    expect(result).toEqual({ content: [{ type: 'text', text: 'hello' }] });
+  });
+
+  it('returns tool_use blocks as-is for the caller to process', async () => {
+    const fakeClient = makeFakeClient('');
+    fakeClient.messages.create = async () => ({
+      content: [{ type: 'tool_use', name: 'search', input: { query: 'ph meter' } }],
+    });
+    const provider = createAnthropicProvider(fakeClient);
+
+    const result = await provider.chat([{ role: 'user', content: 'find sops' }]);
+
+    expect(result.content[0]).toEqual({ type: 'tool_use', name: 'search', input: { query: 'ph meter' } });
+  });
+});

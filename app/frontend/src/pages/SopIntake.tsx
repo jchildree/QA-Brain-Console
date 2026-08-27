@@ -5,7 +5,7 @@ import { sopBlueprint } from '../blueprint/sopBlueprint';
 
 const sopApi = createRecordApi('sops');
 
-export function Intake() {
+export function SopIntake() {
   const navigate = useNavigate();
   const location = useLocation();
 

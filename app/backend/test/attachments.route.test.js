@@ -72,4 +72,16 @@ describe('POST /api/cap/:filename/attachments', () => {
 
     expect(capturedType).toBe('cap');
   });
+
+  it('returns attachmentPath with forward slashes regardless of host OS', async () => {
+    const fakeProvider = makeFakeProvider({});
+    app = express();
+    app.use('/api', createAttachmentsRouter('cap', tmpDir, fakeProvider));
+
+    const res = await request(app)
+      .post('/api/cap/CAP-20260101-001.md/attachments')
+      .attach('evidence', Buffer.from('text'), { filename: 'note.txt', contentType: 'text/plain' });
+
+    expect(res.body.attachmentPath).toBe('attachments/CAP-20260101-001/note.txt');
+  });
 });

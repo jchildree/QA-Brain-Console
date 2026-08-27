@@ -29,7 +29,10 @@ function createRecordsRouter(urlSlug, idPrefix, dir, trashDir) {
     if (!isSafeFilename(req.params.filename)) {
       return res.status(400).json({ error: 'invalid filename' });
     }
-    const { frontmatter, body, expectedHash } = req.body;
+    const { frontmatter, body, expectedHash } = req.body || {};
+    if (typeof body !== 'string' || frontmatter === null || typeof frontmatter !== 'object') {
+      return res.status(400).json({ error: 'frontmatter (object) and body (string) are required' });
+    }
     const stamped = req.user ? { ...frontmatter, updated_by: req.user } : frontmatter;
     try {
       const { hash } = writeSop(dir, req.params.filename, stamped, body, expectedHash);

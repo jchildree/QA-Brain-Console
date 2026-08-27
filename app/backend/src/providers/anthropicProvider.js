@@ -24,7 +24,16 @@ function createAnthropicProvider(client) {
     }
   }
 
-  return { extractFields };
+  async function chat(messages, tools = []) {
+    return client.messages.create({
+      model: 'claude-sonnet-5',
+      max_tokens: 2048,
+      messages,
+      tools,
+    });
+  }
+
+  return { extractFields, chat };
 }
 
 module.exports = { createAnthropicProvider };

@@ -11,6 +11,7 @@ import { AuthContext } from '../context/AuthContext';
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
+  vi.spyOn(relatedRecords, 'fetchTagVocabulary').mockResolvedValue([]);
   vi.spyOn(backlinksApi, 'findBacklinks').mockResolvedValue([]);
   vi.spyOn(client, 'listActiveUsernames').mockResolvedValue(['alice', 'bob']);
   vi.spyOn(client, 'listEvidence').mockResolvedValue([]);
@@ -127,7 +128,14 @@ describe('NoteEditor', () => {
         expect.objectContaining({
           method: 'PUT',
           body: JSON.stringify({
-            frontmatter: { id: 'NOTE-1', title: 'Meeting notes', folder: '', tags: [], assigned_to: 'bob' },
+            frontmatter: {
+              id: 'NOTE-1',
+              title: 'Meeting notes',
+              folder: '',
+              tags: [],
+              assigned_to: 'bob',
+              related_documents: [],
+            },
             body: 'body',
             expectedHash: 'hash-1',
           }),
@@ -192,5 +200,47 @@ describe('NoteEditor', () => {
     await waitFor(() => expect(client.uploadAttachment).toHaveBeenCalledWith('notes', 'NOTE-1.md', file));
     await waitFor(() => expect(screen.getByText('report.pdf')).toBeInTheDocument());
     expect(screen.queryByText('No source attached yet.')).not.toBeInTheDocument();
+  });
+
+  it('auto-fills empty frontmatter fields from a text attachment\'s extraction, never status, and shows a review note', async () => {
+    (fetch as any).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        filename: 'NOTE-1.md',
+        // folder starts empty -- eligible to be filled. title is already set --
+        // must not be overwritten even though the extraction also guesses one.
+        frontmatter: { id: 'NOTE-1', title: 'Meeting notes', folder: '', tags: [] },
+        body: 'body',
+        hash: 'hash-1',
+      }),
+    });
+    vi.spyOn(client, 'uploadAttachment').mockResolvedValue({
+      attachmentPath: 'attachments/NOTE-1/report.txt',
+      extracted: { folder: 'Meetings', title: 'AI Guessed Title', status: 'Approved' },
+      note: null,
+    });
+
+    render(
+      <MemoryRouter>
+        <NoteEditor filename="NOTE-1.md" />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByLabelText('Title *')).toHaveValue('Meeting notes'));
+
+    const file = new File(['content'], 'report.txt', { type: 'text/plain' });
+    fireEvent.change(screen.getByLabelText('Add Source'), { target: { files: [file] } });
+
+    await waitFor(() => expect(screen.getByLabelText('Folder')).toHaveValue('Meetings'));
+    // Title started non-empty -- extraction must not clobber it.
+    expect(screen.getByLabelText('Title *')).toHaveValue('Meeting notes');
+    expect(screen.getByText(/Filled 1 empty field/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() => expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/notes/NOTE-1.md', expect.objectContaining({ method: 'PUT' })));
+    const putCall = (fetch as any).mock.calls.find((c: any[]) => c[1]?.method === 'PUT');
+    const savedFrontmatter = JSON.parse(putCall[1].body).frontmatter;
+    expect(savedFrontmatter.status).toBeUndefined();
   });
 });

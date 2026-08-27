@@ -7,6 +7,7 @@ import * as relatedRecords from '../api/relatedRecords';
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
+  vi.spyOn(relatedRecords, 'fetchTagVocabulary').mockResolvedValue([]);
 });
 
 describe('NoteIntake', () => {

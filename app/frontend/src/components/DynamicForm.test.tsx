@@ -106,3 +106,73 @@ describe('DynamicForm', () => {
     expect(onChange).toHaveBeenCalledWith('owner', 'Someone Not In The System');
   });
 });
+
+describe('DynamicForm - fetchAllRecordOptions fallback', () => {
+  it('renders the input and allows free-text entry when fetchAllRecordOptions fails', async () => {
+    vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockRejectedValue(new Error('Network error'));
+    const onChange = vi.fn();
+    const relatedBlueprint: BlueprintField[] = [
+      { key: 'related_documents', label: 'Related Documents', type: 'related' },
+    ];
+    render(<DynamicForm blueprint={relatedBlueprint} values={{}} onChange={onChange} />);
+
+    const input = screen.getByLabelText('Related Documents');
+    expect(input).toBeInTheDocument();
+
+    fireEvent.change(input, { target: { value: 'CUSTOM-ID-999' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith('related_documents', ['CUSTOM-ID-999']));
+  });
+});
+
+describe('RelatedDocumentsPicker edge cases', () => {
+  const relatedBlueprint: BlueprintField[] = [
+    { key: 'related_documents', label: 'Related Documents', type: 'related' },
+  ];
+
+  it('renders no chips when related_documents is an empty array', () => {
+    render(<DynamicForm blueprint={relatedBlueprint} values={{ related_documents: [] }} onChange={vi.fn()} />);
+    expect(screen.queryByRole('button', { name: /Remove/ })).not.toBeInTheDocument();
+  });
+
+  it('treats null related_documents as an empty array', () => {
+    render(<DynamicForm blueprint={relatedBlueprint} values={{ related_documents: null }} onChange={vi.fn()} />);
+    expect(screen.getByLabelText('Related Documents')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Remove/ })).not.toBeInTheDocument();
+  });
+
+  it('treats undefined related_documents as an empty array', () => {
+    render(<DynamicForm blueprint={relatedBlueprint} values={{ related_documents: undefined }} onChange={vi.fn()} />);
+    expect(screen.getByLabelText('Related Documents')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Remove/ })).not.toBeInTheDocument();
+  });
+
+  it('shows a non-existent id as a chip labeled with the id itself', () => {
+    render(<DynamicForm blueprint={relatedBlueprint} values={{ related_documents: ['NOT-A-REAL-ID'] }} onChange={vi.fn()} />);
+    expect(screen.getByText('NOT-A-REAL-ID')).toBeInTheDocument();
+  });
+
+  it('shows the cached title for a known id and falls back to the id for an unknown one', async () => {
+    render(<DynamicForm blueprint={relatedBlueprint} values={{ related_documents: ['SOP-1', 'MISSING-ID'] }} onChange={vi.fn()} />);
+    await waitFor(() => expect(screen.getByText('SOP-1')).toBeInTheDocument());
+    expect(screen.getByText('MISSING-ID')).toBeInTheDocument();
+  });
+
+  it('prevents rapid duplicate entry of the same id', () => {
+    const onChange = vi.fn();
+    render(<DynamicForm blueprint={relatedBlueprint} values={{ related_documents: [] }} onChange={onChange} />);
+    const input = screen.getByLabelText('Related Documents');
+
+    fireEvent.change(input, { target: { value: 'SOP-1' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+    fireEvent.change(input, { target: { value: 'SOP-1' } });
+    fireEvent.keyDown(input, { key: 'Enter' });
+
+    // add() closes over the value prop from the initial render (still []),
+    // so both Enters commit the same single-id array -- onChange is never
+    // called with a second, duplicate-containing array.
+    expect(onChange).toHaveBeenCalledTimes(2);
+    onChange.mock.calls.forEach((call) => expect(call).toEqual(['related_documents', ['SOP-1']]));
+  });
+});

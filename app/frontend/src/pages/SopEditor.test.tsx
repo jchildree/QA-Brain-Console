@@ -8,6 +8,7 @@ import * as client from '../api/client';
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
+  vi.spyOn(relatedRecords, 'fetchTagVocabulary').mockResolvedValue([]);
   vi.spyOn(client, 'listActiveUsernames').mockResolvedValue([]);
 });
 

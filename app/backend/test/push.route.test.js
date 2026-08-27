@@ -108,8 +108,32 @@ describe('POST /api/push/subscribe', () => {
 });
 
 describe('POST /api/push/test', () => {
-  it('returns a stubbed success response', async () => {
+  let subsFile;
+  let authedApp;
+
+  beforeEach(() => {
+    subsFile = path.join(os.tmpdir(), `subs-test-${Date.now()}-${Math.random()}.json`);
+    fs.writeFileSync(subsFile, JSON.stringify({ alice: [validSub] }));
+    authedApp = express();
+    authedApp.use(express.json());
+    authedApp.use((req, res, next) => {
+      req.user = 'alice';
+      next();
+    });
+    authedApp.use('/api', createPushRouter(subsFile));
+  });
+
+  afterEach(() => {
+    fs.rmSync(subsFile, { force: true });
+  });
+
+  it('returns 401 without an authenticated user', async () => {
     const res = await request(app).post('/api/push/test').send({});
+    expect(res.status).toBe(401);
+  });
+
+  it('broadcasts to the authenticated user\'s stored subscriptions', async () => {
+    const res = await request(authedApp).post('/api/push/test').send({});
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
   });

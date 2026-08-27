@@ -1,5 +1,6 @@
 // Contract expected of any in-house/custom AI agent wired in via CUSTOM_AI_ENDPOINT:
 // POST { rawText: string, type: string } -> 200 { ...type-specific fields }
+// POST /chat { messages: Array, tools: Array } -> 200 { text: string, toolUse?: { name, input } }
 
 function createCustomProvider(endpoint, fetchImpl = fetch) {
   if (!endpoint) {
@@ -18,7 +19,19 @@ function createCustomProvider(endpoint, fetchImpl = fetch) {
     return res.json();
   }
 
-  return { extractFields };
+  async function chat(messages, tools = []) {
+    const res = await fetchImpl(`${endpoint}/chat`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, tools }),
+    });
+    if (!res.ok) {
+      throw new Error(`Custom AI chat endpoint returned ${res.status}`);
+    }
+    return res.json();
+  }
+
+  return { extractFields, chat };
 }
 
 module.exports = { createCustomProvider };

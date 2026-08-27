@@ -110,4 +110,43 @@ describe('RecordDashboard', () => {
     await waitFor(() => expect(screen.queryByText('MTG-2')).not.toBeInTheDocument());
     expect(screen.getAllByText('MTG-1').length).toBeGreaterThan(0);
   });
+
+  // Audit finding: handleDelete() awaits api.remove() with no try/catch -- on
+  // failure the record is never removed from state, and there's no error
+  // message telling the user the delete didn't happen.
+  it('leaves the record visible with no error message when delete fails', async () => {
+    const api = makeFakeApi([
+      { id: 'CAP-1', status: 'Draft', version: '1.0', department: 'QA', review_date: '2027-01-01', owner: 'Jane', filename: 'CAP-1.md' },
+    ]);
+    api.remove.mockRejectedValue(new Error('delete failed'));
+
+    render(
+      <MemoryRouter>
+        <RecordDashboard api={api} title="CAP" type="cap" />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getAllByText('CAP-1').length).toBeGreaterThan(0));
+    fireEvent.click(screen.getAllByLabelText('Delete CAP-1')[0]);
+
+    await waitFor(() => expect(api.remove).toHaveBeenCalledWith('CAP-1.md'));
+    expect(screen.getAllByText('CAP-1').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+  });
+
+  it('renders uncategorized records with non-standard status in a separate section', async () => {
+    const api = makeFakeApi([
+      { id: 'CAP-1', status: 'Approved', version: '1.0', department: 'QA', review_date: '2026-01-01', owner: 'Jane', filename: 'CAP-1.md' },
+      { id: 'CAP-2', status: 'NonStandardStatus', version: '1.0', department: 'QA', review_date: '2027-01-01', owner: 'Jane', filename: 'CAP-2.md' },
+    ]);
+
+    render(
+      <MemoryRouter>
+        <RecordDashboard api={api} title="CAP" type="cap" />
+      </MemoryRouter>
+    );
+
+    await waitFor(() => expect(screen.getByText('Uncategorized (1)')).toBeInTheDocument());
+    expect(screen.getAllByText('CAP-2').length).toBeGreaterThan(0);
+  });
 });

@@ -1,17 +1,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
-import { Intake } from './Intake';
+import { SopIntake } from './SopIntake';
 import * as relatedRecords from '../api/relatedRecords';
 import * as client from '../api/client';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
+  vi.spyOn(relatedRecords, 'fetchTagVocabulary').mockResolvedValue([]);
   vi.spyOn(client, 'listActiveUsernames').mockResolvedValue([]);
 });
 
-describe('Intake', () => {
+describe('SopIntake', () => {
   it('extracts fields from pasted raw text and pre-fills the form', async () => {
     (fetch as any).mockResolvedValueOnce({
       ok: true,
@@ -20,7 +21,7 @@ describe('Intake', () => {
 
     render(
       <MemoryRouter>
-        <Intake />
+        <SopIntake />
       </MemoryRouter>
     );
 
@@ -39,7 +40,7 @@ describe('Intake', () => {
   it('disables Extract until raw text is entered', () => {
     render(
       <MemoryRouter>
-        <Intake />
+        <SopIntake />
       </MemoryRouter>
     );
     expect(screen.getByText('Extract')).toBeDisabled();
@@ -58,7 +59,7 @@ describe('Intake', () => {
     render(
       <MemoryRouter initialEntries={['/sop/new']}>
         <Routes>
-          <Route path="/sop/new" element={<Intake />} />
+          <Route path="/sop/new" element={<SopIntake />} />
           <Route path="/sop/:filename" element={<p>editor route</p>} />
         </Routes>
       </MemoryRouter>

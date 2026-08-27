@@ -9,6 +9,7 @@ export interface BlueprintField {
 }
 
 export const sopBlueprint: BlueprintField[] = [
+  { key: 'id', label: 'ID', type: 'text' },
   { key: 'title', label: 'Title', type: 'text' },
   { key: 'status', label: 'Status', type: 'select', options: ['Draft', 'In Review', 'Approved', 'Obsolete'], required: true },
   { key: 'version', label: 'Version', type: 'text', required: true },

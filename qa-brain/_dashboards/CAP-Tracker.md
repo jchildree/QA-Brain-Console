@@ -6,8 +6,8 @@
 [[CAP]]
 ```dataview
 TABLE status, owner, root_cause, effectiveness_status, file.mtime AS "Last Updated"
-FROM "docs/qa-brain/CAP"
-WHERE status != "Closed"
+FROM "qa-brain/CAP"
+WHERE status != "Obsolete"
 SORT status ASC
 ```
 
@@ -17,7 +17,7 @@ SORT status ASC
 
 ```dataview
 TABLE effectiveness_status, review_date, owner
-FROM "docs/qa-brain/CAP"
+FROM "qa-brain/CAP"
 WHERE effectiveness_status = "Pending" AND review_date <= date(today) + dur(14 days)
 SORT review_date ASC
 ```
@@ -27,9 +27,9 @@ SORT review_date ASC
 ## CAP → Incident Traceability
 [[Incident-Trends]]
 ```dataview
-TABLE related_records, root_cause, status
-FROM "docs/qa-brain/CAP"
-SORT created DESC
+TABLE related_documents, root_cause, status
+FROM "qa-brain/CAP"
+SORT file.ctime DESC
 ```
 
 ---
@@ -38,7 +38,7 @@ SORT created DESC
 
 ```dataview
 TABLE rows.file.link AS "CAPs", root_cause
-FROM "docs/qa-brain/CAP"
+FROM "qa-brain/CAP"
 WHERE root_cause != null AND root_cause != ""
 GROUP BY root_cause
 SORT rows.length DESC

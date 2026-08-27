@@ -42,7 +42,7 @@ function createAttachmentsRouter(urlSlug, dir, provider) {
       note = 'Binary evidence attached; no automatic extraction for this file type';
     }
 
-    const attachmentPath = path.join('attachments', recordBase, safeName);
+    const attachmentPath = ['attachments', recordBase, safeName].join('/');
     res.json({ attachmentPath, extracted, note });
   });
 

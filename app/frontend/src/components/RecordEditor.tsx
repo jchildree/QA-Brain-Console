@@ -4,7 +4,7 @@ import { SaveConflictError, type createRecordApi } from '../api/client';
 import { DynamicForm } from './DynamicForm';
 import { type BlueprintField } from '../blueprint/sopBlueprint';
 import { findBacklinks, type Backlink } from '../api/backlinks';
-import { parseRelatedSection, mergeRelated } from '../api/relatedRecords';
+import { parseRelatedSection, parseInlineIds, mergeRelated, mergeTags, fetchTagVocabulary, suggestTags } from '../api/relatedRecords';
 
 export function RecordEditor({
   api,
@@ -19,7 +19,7 @@ export function RecordEditor({
   filename: string;
   type: string;
   renderExtraActions?: (frontmatter: Record<string, unknown>, body: string) => ReactNode;
-  renderExtra?: (frontmatter: Record<string, unknown>, body: string) => ReactNode;
+  renderExtra?: (frontmatter: Record<string, unknown>, body: string, autoFill: (fields: Record<string, unknown>) => number) => ReactNode;
 }) {
   const navigate = useNavigate();
   const [frontmatter, setFrontmatter] = useState<Record<string, unknown>>({});
@@ -57,17 +57,35 @@ export function RecordEditor({
   };
 
   const handleSave = async () => {
+    const missing = blueprint
+      .filter((field) => field.required)
+      .filter((field) => {
+        const value = frontmatter[field.key];
+        return value == null || value === '' || (Array.isArray(value) && value.length === 0);
+      })
+      .map((field) => field.label);
+
+    if (missing.length > 0) {
+      setSaveError(`Required fields missing: ${missing.join(', ')}`);
+      return;
+    }
+
     setSaving(true);
     setSaveError(null);
     setConflict(false);
     setSaved(false);
     try {
-      // Fold any "## Related" wikilinks from the body into related_documents,
-      // matching the intake flow -- otherwise links only in the body never
-      // reach the Related Documents field.
+      // Fold any "## Related" wikilinks and bare inline ids from the body
+      // into related_documents, and suggest known vocabulary tags -- matching
+      // the intake flow. Never link a record to itself.
+      const selfId = typeof frontmatter.id === 'string' ? frontmatter.id : undefined;
+      const relatedIds = [...parseRelatedSection(body), ...parseInlineIds(body)].filter((id) => id !== selfId);
+      const vocabulary = await fetchTagVocabulary();
+      const suggestedTags = suggestTags(`${String(frontmatter.title ?? '')} ${body}`, vocabulary);
       const merged = {
         ...frontmatter,
-        related_documents: mergeRelated(frontmatter.related_documents, parseRelatedSection(body)),
+        related_documents: mergeRelated(frontmatter.related_documents, relatedIds),
+        tags: mergeTags(frontmatter.tags, suggestedTags),
       };
       setFrontmatter(merged);
       const result = await api.save(filename, merged, body, hash);
@@ -81,6 +99,26 @@ export function RecordEditor({
     } finally {
       setSaving(false);
     }
+  };
+
+  // "Suggest, human confirms": fills only fields that are still empty, never
+  // status/approved_by (lifecycle fields stay 100% manual), and only into
+  // React state -- the existing Save button still has to be clicked.
+  const isEmpty = (value: unknown) => value == null || value === '' || (Array.isArray(value) && value.length === 0);
+  const autoFill = (incoming: Record<string, unknown>): number => {
+    let filled = 0;
+    setFrontmatter((prev) => {
+      const next = { ...prev };
+      for (const [key, value] of Object.entries(incoming)) {
+        if (key === 'status' || key === 'approved_by') continue;
+        if (isEmpty(prev[key]) && !isEmpty(value)) {
+          next[key] = value;
+          filled += 1;
+        }
+      }
+      return next;
+    });
+    return filled;
   };
 
   const handleDelete = async () => {
@@ -146,7 +184,7 @@ export function RecordEditor({
           </ul>
         </div>
       )}
-      {renderExtra?.(frontmatter, body)}
+      {renderExtra?.(frontmatter, body, autoFill)}
     </div>
   );
 }

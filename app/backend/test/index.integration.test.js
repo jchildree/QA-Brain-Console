@@ -53,6 +53,25 @@ describe('index.js wiring', () => {
     expect(adminRes.status).toBe(200);
   });
 
+  it('rejects /api/chat with no session', async () => {
+    const res = await request(app).post('/api/chat').send({ message: 'hi' });
+    expect(res.status).toBe(401);
+  });
+
+  it('rejects POST /api/sops when allowedTypes excludes "sops"', async () => {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ username: 'integration-test-user', password: 'integration-test-password' });
+    const res = await agent.post('/api/sops').send({ frontmatter: {}, body: '', allowedTypes: ['cap'] });
+    expect(res.status).toBe(403);
+  });
+
+  it('does not block POST /api/sops when allowedTypes is omitted', async () => {
+    const agent = request.agent(app);
+    await agent.post('/api/auth/login').send({ username: 'integration-test-user', password: 'integration-test-password' });
+    const res = await agent.post('/api/sops').send({ frontmatter: {}, body: '' });
+    expect(res.status).not.toBe(403);
+  });
+
   it('rejects /api/parse-frontmatter with no session and allows it after logging in', async () => {
     const noSessionRes = await request(app).post('/api/parse-frontmatter').send({ rawText: 'x' });
     expect(noSessionRes.status).toBe(401);

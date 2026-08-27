@@ -6,9 +6,9 @@
 
 ```dataview
 TABLE status, department, tags, file.mtime AS "Last Updated"
-FROM "docs/qa-brain/INCIDENT"
-WHERE status != "Closed"
-SORT created DESC
+FROM "qa-brain/INCIDENT"
+WHERE status != "Obsolete"
+SORT file.ctime DESC
 ```
 
 ---
@@ -17,7 +17,7 @@ SORT created DESC
 
 ```dataview
 TABLE rows.file.link AS "Incidents", root_cause
-FROM "docs/qa-brain/INCIDENT"
+FROM "qa-brain/INCIDENT"
 WHERE root_cause != null AND root_cause != ""
 GROUP BY root_cause
 SORT rows.length DESC
@@ -29,7 +29,7 @@ SORT rows.length DESC
 
 ```dataview
 TABLE rows.file.link AS "Incidents", department
-FROM "docs/qa-brain/INCIDENT"
+FROM "qa-brain/INCIDENT"
 GROUP BY department
 SORT rows.length DESC
 ```
@@ -39,20 +39,20 @@ SORT rows.length DESC
 ## Incidents Without a CAP
 
 ```dataview
-TABLE status, tags, created
-FROM "docs/qa-brain/INCIDENT"
-WHERE !contains(related_records, "CAP") AND status != "Closed"
-SORT created ASC
+TABLE status, tags, file.ctime AS "Created"
+FROM "qa-brain/INCIDENT"
+WHERE !contains(related_documents, "CAP") AND status != "Obsolete"
+SORT file.ctime ASC
 ```
 
 ---
 
-## Closed This Month
+## Obsoleted This Month
 
 ```dataview
-TABLE file.mtime AS "Closed", department
-FROM "docs/qa-brain/INCIDENT"
-WHERE status = "Closed" AND file.mtime >= date(today) - dur(30 days)
+TABLE file.mtime AS "Obsoleted", department
+FROM "qa-brain/INCIDENT"
+WHERE status = "Obsolete" AND file.mtime >= date(today) - dur(30 days)
 SORT file.mtime DESC
 ```
 

@@ -101,6 +101,11 @@ describe('PUT /api/cap/:filename', () => {
     const after = await request(app).get('/api/cap/CAP-20260101-001.md');
     expect(after.body.frontmatter.status).toBe('In Review');
   });
+
+  it('returns 400 for a malformed body instead of crashing', async () => {
+    const res = await request(app).put('/api/cap/CAP-20260101-001.md').send({});
+    expect(res.status).toBe(400);
+  });
 });
 
 describe('POST /api/cap', () => {

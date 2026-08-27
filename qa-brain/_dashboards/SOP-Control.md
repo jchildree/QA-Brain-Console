@@ -6,7 +6,7 @@
 
 ```dataview
 TABLE version, status, department, review_date, approved_by
-FROM "docs/qa-brain/SOP"
+FROM "qa-brain/SOP"
 WHERE status != "Obsolete"
 SORT status ASC, review_date ASC
 ```
@@ -17,7 +17,7 @@ SORT status ASC, review_date ASC
 
 ```dataview
 TABLE version, review_date, owner
-FROM "docs/qa-brain/SOP"
+FROM "qa-brain/SOP"
 WHERE review_date < date(today) AND status = "Approved"
 SORT review_date ASC
 ```
@@ -28,7 +28,7 @@ SORT review_date ASC
 
 ```dataview
 TABLE version, owner, file.mtime AS "Last Modified"
-FROM "docs/qa-brain/SOP"
+FROM "qa-brain/SOP"
 WHERE status = "Draft" OR status = "In Review"
 SORT file.mtime DESC
 ```
@@ -38,10 +38,10 @@ SORT file.mtime DESC
 ## Obsolete SOPs
 
 ```dataview
-TABLE version, modified, department
-FROM "docs/qa-brain/SOP"
+TABLE version, file.mtime AS "Modified", department
+FROM "qa-brain/SOP"
 WHERE status = "Obsolete"
-SORT modified DESC
+SORT file.mtime DESC
 ```
 
 ---
@@ -49,9 +49,9 @@ SORT modified DESC
 ## SOP → Incident Linkage
 
 ```dataview
-TABLE related_records, department, status
-FROM "docs/qa-brain/SOP"
-WHERE related_records != null
+TABLE related_documents, department, status
+FROM "qa-brain/SOP"
+WHERE related_documents != null
 SORT file.name ASC
 ```
 

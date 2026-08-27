@@ -3,9 +3,7 @@ id: <% `SOP-${tp.date.now("YYYYMMDD")}-001` %>
 type: SOP
 status: Draft
 version: 1.0
-owner: Joseph Childree
-created: <% tp.date.now("YYYY-MM-DD") %>
-modified: <% tp.date.now("YYYY-MM-DD") %>
+owner:
 approved_by: 
 effective_date: 
 review_date: <% tp.date.now("YYYY-MM-DD", 365) %>

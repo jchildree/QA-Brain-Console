@@ -20,10 +20,11 @@ const PROMOTE_TARGETS = [
 // Attaching a file here as a "Source" is what populates the Evidence Library --
 // that page just scans every record type's attachments/ folder on disk, so
 // uploading through the existing generic backend route is the whole fix.
-function SourcesPanel({ filename }: { filename: string }) {
+function SourcesPanel({ filename, autoFill }: { filename: string; autoFill: (fields: Record<string, unknown>) => number }) {
   const [sources, setSources] = useState<EvidenceFile[] | null>(null);
   const [uploading, setUploading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [autoFilledCount, setAutoFilledCount] = useState<number | null>(null);
 
   const load = () => {
     listEvidence()
@@ -37,8 +38,12 @@ function SourcesPanel({ filename }: { filename: string }) {
     if (!file) return;
     setUploading(true);
     setError(null);
+    setAutoFilledCount(null);
     try {
-      await uploadAttachment('notes', filename, file);
+      const { extracted } = await uploadAttachment('notes', filename, file);
+      if (extracted) {
+        setAutoFilledCount(autoFill(extracted));
+      }
       load();
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to add source');
@@ -65,20 +70,24 @@ function SourcesPanel({ filename }: { filename: string }) {
             No source attached yet.
           </p>
         )}
-        <label className="flex flex-col gap-1.5">
-          <span className="text-xs font-bold uppercase tracking-wide" style={{ color: 'var(--ink-dim)' }}>
-            Add Source
-          </span>
+        <label className="accession-btn self-start" style={{ cursor: uploading ? 'default' : 'pointer' }}>
+          {uploading ? 'Uploading…' : '+ Add Source'}
           <input
             aria-label="Add Source"
             type="file"
             disabled={uploading}
             onChange={(e) => handleUpload(e.target.files?.[0])}
+            style={{ display: 'none' }}
           />
         </label>
         {error && (
           <p role="alert" className="text-xs font-mono" style={{ color: 'var(--red)' }}>
             {error}
+          </p>
+        )}
+        {autoFilledCount !== null && autoFilledCount > 0 && (
+          <p className="text-xs font-mono" style={{ color: 'var(--ink-dim)' }}>
+            Filled {autoFilledCount} empty field{autoFilledCount === 1 ? '' : 's'} from this source -- review before saving.
           </p>
         )}
       </div>
@@ -118,7 +127,7 @@ export function NoteEditor({ filename }: { filename: string }) {
           )}
         </div>
       )}
-      renderExtra={() => <SourcesPanel filename={filename} />}
+      renderExtra={(_frontmatter, _body, autoFill) => <SourcesPanel filename={filename} autoFill={autoFill} />}
     />
   );
 }

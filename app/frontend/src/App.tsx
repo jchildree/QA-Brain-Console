@@ -3,9 +3,9 @@ import { AppShell } from './components/AppShell';
 import { AuthGate } from './components/AuthGate';
 import { ThemeProvider } from './context/ThemeContext';
 import { Overview } from './pages/Overview';
-import { Dashboard } from './pages/Dashboard';
+import { SopDashboard } from './pages/SopDashboard';
 import { SopEditor } from './pages/SopEditor';
-import { Intake } from './pages/Intake';
+import { SopIntake } from './pages/SopIntake';
 import { CapDashboard } from './pages/CapDashboard';
 import { CapEditor } from './pages/CapEditor';
 import { CapIntake } from './pages/CapIntake';
@@ -91,8 +91,8 @@ export default function App() {
             <AppShell>
               <Routes>
                 <Route path="/" element={<Overview />} />
-                <Route path="/sop" element={<Dashboard />} />
-                <Route path="/sop/new" element={<Intake />} />
+                <Route path="/sop" element={<SopDashboard />} />
+                <Route path="/sop/new" element={<SopIntake />} />
                 <Route path="/sop/:filename" element={<SopEditorRoute />} />
                 <Route path="/cap" element={<CapDashboard />} />
                 <Route path="/cap/new" element={<CapIntake />} />

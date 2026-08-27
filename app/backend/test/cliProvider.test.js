@@ -59,3 +59,30 @@ describe('cliProvider.extractFields', () => {
     await expect(provider.extractFields('some text')).rejects.toThrow(/non-JSON/);
   });
 });
+
+describe('cliProvider.chat', () => {
+  it('sends messages and tool descriptions to the runner and returns plain text', async () => {
+    let capturedPrompt;
+    const runner = async (prompt) => {
+      capturedPrompt = prompt;
+      return 'We have three SOPs on file.';
+    };
+    const provider = createCliProvider(runner);
+    const tools = [{ name: 'search', description: 'Search vault records' }];
+
+    const result = await provider.chat([{ role: 'user', content: 'What SOPs do we have?' }], tools);
+
+    expect(capturedPrompt).toContain('What SOPs do we have?');
+    expect(capturedPrompt).toContain('search');
+    expect(result).toEqual({ text: 'We have three SOPs on file.' });
+  });
+
+  it('extracts a tool_call block into structured toolUse', async () => {
+    const runner = async () => '```tool_call\n{"name":"search","input":{"query":"ph meter"}}\n```';
+    const provider = createCliProvider(runner);
+
+    const result = await provider.chat([{ role: 'user', content: 'find ph meter sops' }]);
+
+    expect(result.toolUse).toEqual({ name: 'search', input: { query: 'ph meter' } });
+  });
+});

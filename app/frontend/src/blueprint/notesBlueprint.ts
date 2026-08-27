@@ -1,6 +1,7 @@
 import type { BlueprintField } from './sopBlueprint';
 
 export const notesBlueprint: BlueprintField[] = [
+  { key: 'id', label: 'ID', type: 'text' },
   { key: 'title', label: 'Title', type: 'text', required: true },
   { key: 'folder', label: 'Folder', type: 'text' },
   { key: 'tags', label: 'Tags', type: 'tags' },

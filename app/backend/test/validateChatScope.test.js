@@ -19,7 +19,7 @@ describe('validateChatScope', () => {
   it('allows a create when the type is inside the allowed scope', () => {
     const req = { baseUrl: '/api/sops', body: { allowedTypes: ['sops', 'cap'] } };
     const res = mockRes();
-    const next = jest.fn();
+    const next = vi.fn();
     validateChatScope(req, res, next);
     expect(next).toHaveBeenCalled();
     expect(res.statusCode).toBeNull();
@@ -28,7 +28,7 @@ describe('validateChatScope', () => {
   it('rejects a create when the type is outside the allowed scope', () => {
     const req = { baseUrl: '/api/cap', body: { allowedTypes: ['sops'] } };
     const res = mockRes();
-    const next = jest.fn();
+    const next = vi.fn();
     validateChatScope(req, res, next);
     expect(next).not.toHaveBeenCalled();
     expect(res.statusCode).toBe(403);
@@ -38,7 +38,7 @@ describe('validateChatScope', () => {
   it('allows any type when allowedTypes is not provided (backward-compat)', () => {
     const req = { baseUrl: '/api/cap', body: {} };
     const res = mockRes();
-    const next = jest.fn();
+    const next = vi.fn();
     validateChatScope(req, res, next);
     expect(next).toHaveBeenCalled();
   });
@@ -46,7 +46,7 @@ describe('validateChatScope', () => {
   it('is a no-op on routes that are not record-create routes (e.g. /api/chat)', () => {
     const req = { baseUrl: '/api/chat', body: { allowedTypes: ['sops'] } };
     const res = mockRes();
-    const next = jest.fn();
+    const next = vi.fn();
     validateChatScope(req, res, next);
     expect(next).toHaveBeenCalled();
     expect(res.statusCode).toBeNull();

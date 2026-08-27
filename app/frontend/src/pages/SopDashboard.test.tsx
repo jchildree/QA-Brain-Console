@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
-import { Dashboard } from './Dashboard';
+import { SopDashboard } from './SopDashboard';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
 });
 
-describe('Dashboard', () => {
+describe('SopDashboard', () => {
   it('lists SOP records from the /api/sops base URL', async () => {
     (fetch as any).mockResolvedValue({
       ok: true,
@@ -19,7 +19,7 @@ describe('Dashboard', () => {
 
     render(
       <MemoryRouter>
-        <Dashboard />
+        <SopDashboard />
       </MemoryRouter>
     );
 

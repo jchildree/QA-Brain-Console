@@ -38,3 +38,30 @@ describe('customProvider.extractFields', () => {
     await expect(provider.extractFields('raw text')).rejects.toThrow(/500/);
   });
 });
+
+describe('customProvider.chat', () => {
+  it('POSTs messages and tools to <endpoint>/chat and returns the parsed response', async () => {
+    const fakeFetch = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ text: 'hello there' }),
+    });
+    const provider = createCustomProvider('http://localhost:9999/extract', fakeFetch);
+    const messages = [{ role: 'user', content: 'hi' }];
+    const tools = [{ name: 'search', description: 'd', input_schema: {} }];
+
+    const result = await provider.chat(messages, tools);
+
+    expect(fakeFetch).toHaveBeenCalledWith('http://localhost:9999/extract/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, tools }),
+    });
+    expect(result).toEqual({ text: 'hello there' });
+  });
+
+  it('throws a clear error when the chat endpoint responds with a non-2xx status', async () => {
+    const fakeFetch = vi.fn().mockResolvedValue({ ok: false, status: 500 });
+    const provider = createCustomProvider('http://localhost:9999/extract', fakeFetch);
+    await expect(provider.chat([])).rejects.toThrow(/500/);
+  });
+});

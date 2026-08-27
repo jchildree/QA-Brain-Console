@@ -9,12 +9,13 @@ export function NoteCard({
   onDelete: (filename: string) => void;
 }) {
   const folder = typeof record.folder === 'string' ? record.folder : '';
-  const tags = Array.isArray(record.tags) ? (record.tags as string[]) : [];
+  const rawTags = Array.isArray(record.tags) ? record.tags : [];
+  const tags = rawTags.filter((t): t is string => typeof t === 'string' && t.trim().length > 0);
 
   return (
     <Link to={`/notes/${record.filename}`} className="card">
       <div className="card-head">
-        <span className="card-id">{typeof record.title === 'string' && record.title ? record.title : record.id}</span>
+        <span className="card-id" title={record.id}>{typeof record.title === 'string' && record.title ? record.title : record.id}</span>
         <button
           type="button"
           aria-label={`Delete ${record.id}`}
@@ -28,7 +29,7 @@ export function NoteCard({
           &times;
         </button>
       </div>
-      {folder && <span className="card-type">{folder}</span>}
+      <span className="card-type">{folder ? `${folder} · ${record.id}` : record.id}</span>
       {tags.length > 0 && <p className="card-desc">{tags.join(', ')}</p>}
     </Link>
   );

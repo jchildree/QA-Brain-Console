@@ -11,9 +11,9 @@
 [[CAP]]
 ```dataview
 TABLE status, owner, root_cause, effectiveness_status
-FROM "docs/qa-brain/CAP"
-WHERE status != "Closed"
-SORT created DESC
+FROM "qa-brain/CAP"
+WHERE status != "Obsolete"
+SORT file.ctime DESC
 ```
 
 ---
@@ -22,9 +22,9 @@ SORT created DESC
 [[Incident-Trends]] 
 ```dataview
 TABLE status, tags, file.mtime AS "Last Updated"
-FROM "docs/qa-brain/INCIDENT"
-WHERE status != "Closed"
-SORT created DESC
+FROM "qa-brain/INCIDENT"
+WHERE status != "Obsolete"
+SORT file.ctime DESC
 ```
 
 ---
@@ -33,7 +33,7 @@ SORT created DESC
 [[SOP-Control]]
 ```dataview
 TABLE version, status, review_date
-FROM "docs/qa-brain/SOP"
+FROM "qa-brain/SOP"
 WHERE review_date <= date(today) + dur(30 days)
 SORT review_date ASC
 ```
@@ -43,7 +43,7 @@ SORT review_date ASC
 ## 🔄 Recent Changes
 ```dataview
 TABLE status, department, file.mtime AS "Modified"
-FROM "docs/qa-brain/CHANGE"
+FROM "qa-brain/CHANGE"
 SORT file.mtime DESC
 LIMIT 10
 ```
@@ -53,9 +53,9 @@ LIMIT 10
 ## 🎓 Training -- Incomplete
 ```dataview
 TABLE file.link AS "Record", status
-FROM "docs/qa-brain/TRAINING"
+FROM "qa-brain/TRAINING"
 WHERE status != "Approved"
-SORT created DESC
+SORT file.ctime DESC
 ```
 
 ---
@@ -64,8 +64,8 @@ SORT created DESC
 [[Audit-Prep]]
 ```dataview
 TABLE audit_type, status, effective_date
-FROM "docs/qa-brain/AUDIT"
-WHERE status != "Closed"
+FROM "qa-brain/AUDIT"
+WHERE status != "Obsolete"
 SORT effective_date ASC
 ```
 

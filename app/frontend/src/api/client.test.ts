@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { SaveConflictError, extractFromText, login, checkSession, logout, createRecordApi, setupPassword, adminApi, listActiveUsernames, listEvidence, uploadAttachment } from './client';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { SaveConflictError, extractFromText, login, checkSession, logout, createRecordApi, setupPassword, adminApi, listActiveUsernames, listEvidence, uploadAttachment, setChatScope } from './client';
 
 beforeEach(() => {
   vi.stubGlobal('fetch', vi.fn());
@@ -201,5 +201,35 @@ describe('createRecordApi', () => {
   it('throws SaveConflictError on a 409', async () => {
     (fetch as any).mockResolvedValueOnce({ ok: false, status: 409 });
     await expect(capApi.save('CAP-1.md', { status: 'In Review' }, 'body', 'stale-hash')).rejects.toThrow(SaveConflictError);
+  });
+
+  describe('chat scope', () => {
+    afterEach(() => localStorage.removeItem('qa_brain_chat_scope'));
+
+    it('includes allowedTypes from localStorage on create when a scope is set', async () => {
+      setChatScope(['sops', 'cap']);
+      (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ filename: 'CAP-1.md', frontmatter: {} }) });
+      await capApi.create({ status: 'Draft' }, 'body');
+      expect(fetch).toHaveBeenCalledWith('http://localhost:4000/api/cap', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ frontmatter: { status: 'Draft' }, body: 'body', allowedTypes: ['sops', 'cap'] }),
+      });
+    });
+
+    it('still sends the request when the scope excludes this type (backend enforces the reject)', async () => {
+      setChatScope(['sops']);
+      (fetch as any).mockResolvedValueOnce({ ok: true, json: async () => ({ filename: 'CAP-1.md', frontmatter: {} }) });
+      await capApi.create({ status: 'Draft' }, 'body');
+      const [, init] = (fetch as any).mock.calls[0];
+      expect(JSON.parse(init.body).allowedTypes).toEqual(['sops']);
+    });
+
+    it('throws a user-facing message when the backend rejects with 403', async () => {
+      setChatScope(['sops']);
+      (fetch as any).mockResolvedValueOnce({ ok: false, status: 403, json: async () => ({ error: 'record type not in allowed scope for chat-assisted creation' }) });
+      await expect(capApi.create({ status: 'Draft' }, 'body')).rejects.toThrow('record type not in allowed scope for chat-assisted creation');
+    });
   });
 });

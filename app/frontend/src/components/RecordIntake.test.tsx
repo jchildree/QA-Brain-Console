@@ -6,6 +6,7 @@ import * as relatedRecords from '../api/relatedRecords';
 
 beforeEach(() => {
   vi.spyOn(relatedRecords, 'fetchAllRecordOptions').mockResolvedValue([]);
+  vi.spyOn(relatedRecords, 'fetchTagVocabulary').mockResolvedValue([]);
 });
 
 function makeFakeApi() {
@@ -134,5 +135,157 @@ describe('RecordIntake', () => {
 
     await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('AI provider unreachable'));
     expect(screen.getByText('Extract')).not.toBeDisabled();
+  });
+});
+
+describe('RecordIntake - mergeRelated during extraction', () => {
+  it('merges API-returned and body-parsed related documents', async () => {
+    const api = makeFakeApi();
+    api.extract.mockResolvedValue({ related_documents: ['SOP-1'], department: 'QC', tags: [] });
+    render(<RecordIntake api={api} blueprint={capBlueprint} onSave={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText('Raw notes'), { target: { value: 'Content\n## Related\n- CAP-2' } });
+    fireEvent.click(screen.getByText('Extract'));
+
+    await waitFor(() => expect(screen.getByText('SOP-1')).toBeInTheDocument());
+    expect(screen.getByText('CAP-2')).toBeInTheDocument();
+  });
+
+  it('deduplicates across API and body-parsed results', async () => {
+    const api = makeFakeApi();
+    api.extract.mockResolvedValue({ related_documents: ['SOP-1'], department: 'QC', tags: [] });
+    render(<RecordIntake api={api} blueprint={capBlueprint} onSave={vi.fn()} />);
+
+    fireEvent.change(screen.getByLabelText('Raw notes'), { target: { value: 'Content\n## Related\n- SOP-1\n- CAP-2' } });
+    fireEvent.click(screen.getByText('Extract'));
+
+    await waitFor(() => expect(screen.getByText('CAP-2')).toBeInTheDocument());
+    expect(screen.getAllByText('SOP-1')).toHaveLength(1);
+  });
+});
+
+describe('RecordIntake - mergeRelated on save', () => {
+  it('catches a "## Related" section even without an Extract click', async () => {
+    const api = makeFakeApi();
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<RecordIntake api={api} blueprint={capBlueprint} onSave={onSave} />);
+
+    fireEvent.change(screen.getByLabelText('Body'), { target: { value: 'Content\n## Related\n- SOP-1\n- CAP-2' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ related_documents: ['SOP-1', 'CAP-2'] }),
+        expect.any(String)
+      )
+    );
+    expect(api.extract).not.toHaveBeenCalled();
+  });
+
+  it('merges extracted and body-parsed related documents when both exist', async () => {
+    const api = makeFakeApi();
+    api.extract.mockResolvedValue({ related_documents: ['SOP-1'], department: 'QC', tags: [] });
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <RecordIntake
+        api={api}
+        blueprint={capBlueprint}
+        onSave={onSave}
+        initialRawText={'Content\n## Related\n- CAP-2'}
+      />
+    );
+    await waitFor(() => expect(screen.getByLabelText('Department *')).toHaveValue('QC'));
+
+    fireEvent.change(screen.getByLabelText('Body'), { target: { value: 'Content\n## Related\n- CAP-2\n- INC-3' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ related_documents: ['SOP-1', 'CAP-2', 'INC-3'] }),
+        expect.any(String)
+      )
+    );
+  });
+
+  it('keeps initialTitle protection while related_documents merges extraction and body-parsed IDs', async () => {
+    const api = makeFakeApi();
+    api.extract.mockResolvedValue({ title: 'AI Guessed Title', related_documents: ['CAP-1'], department: 'QC', tags: [] });
+    render(
+      <RecordIntake
+        api={api}
+        blueprint={capBlueprint}
+        onSave={vi.fn()}
+        initialRawText={'Some content\n## Related\n- SOP-1'}
+        initialTitle="My Note Title"
+      />
+    );
+
+    await waitFor(() => expect(screen.getByLabelText('Department *')).toHaveValue('QC'));
+    expect(screen.getByLabelText('Title')).toHaveValue('My Note Title');
+    expect(screen.getByText('CAP-1')).toBeInTheDocument();
+    expect(screen.getByText('SOP-1')).toBeInTheDocument();
+  });
+
+  it('saves an empty related_documents array when there is no extraction and no body Related section', async () => {
+    const api = makeFakeApi();
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<RecordIntake api={api} blueprint={capBlueprint} onSave={onSave} />);
+
+    fireEvent.change(screen.getByLabelText('Owner *'), { target: { value: 'Jane' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ related_documents: [] }),
+        expect.any(String)
+      )
+    );
+  });
+
+  it('catches a bare inline id in the body even outside a "## Related" section', async () => {
+    const api = makeFakeApi();
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(<RecordIntake api={api} blueprint={capBlueprint} onSave={onSave} />);
+
+    fireEvent.change(screen.getByLabelText('Body'), {
+      target: { value: 'Mentions INC-20260731-001 in passing, no heading at all.' },
+    });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ related_documents: ['INC-20260731-001'] }),
+        expect.any(String)
+      )
+    );
+    expect(api.extract).not.toHaveBeenCalled();
+  });
+});
+
+describe('RecordIntake - auto-tag on save', () => {
+  it('merges vocabulary tags matched in the title/body into fields.tags without an Extract click', async () => {
+    const api = makeFakeApi();
+    vi.spyOn(relatedRecords, 'fetchTagVocabulary').mockResolvedValue(['calibration', 'audit']);
+    const onSave = vi.fn().mockResolvedValue(undefined);
+    render(
+      <RecordIntake
+        api={api}
+        blueprint={capBlueprint}
+        onSave={onSave}
+        initialTitle="Calibration event"
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText('Body'), { target: { value: 'Nothing tag-worthy here.' } });
+    fireEvent.click(screen.getByText('Save'));
+
+    await waitFor(() =>
+      expect(onSave).toHaveBeenCalledWith(
+        expect.objectContaining({ tags: expect.arrayContaining(['calibration']) }),
+        expect.any(String)
+      )
+    );
+    const savedFields = onSave.mock.calls[0][0];
+    expect(savedFields.tags).not.toContain('audit');
   });
 });

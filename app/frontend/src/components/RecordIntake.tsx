@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { type createRecordApi } from '../api/client';
 import { DynamicForm } from './DynamicForm';
 import { type BlueprintField } from '../blueprint/sopBlueprint';
-import { parseRelatedSection, mergeRelated } from '../api/relatedRecords';
+import { parseRelatedSection, parseInlineIds, mergeRelated, mergeTags, fetchTagVocabulary, suggestTags } from '../api/relatedRecords';
 
 // Defensive: the AI is told to strip markdown syntax from an extracted title,
 // but strip any leading #/* markers again here in case it doesn't comply.
@@ -48,14 +48,15 @@ export function RecordIntake({
     try {
       const result = await api.extract(rawText);
       const extractedTitle = typeof result.title === 'string' ? stripMarkdownTitle(result.title) : result.title;
-      // A "## Related" section in the body lists links the AI may not surface --
-      // fold those ids in alongside whatever extraction found.
+      // A "## Related" section in the body lists links the AI may not surface,
+      // and a bare/wikilinked id anywhere else in the text is worth catching too.
       const fromSection = parseRelatedSection(rawText);
+      const fromInline = parseInlineIds(rawText);
       setFields((prev) => ({
         ...result,
         title: prev.title || extractedTitle,
         version: prev.version || result.version || 'v1',
-        related_documents: mergeRelated(result.related_documents, fromSection),
+        related_documents: mergeRelated(mergeRelated(result.related_documents, fromSection), fromInline),
       }));
     } catch (err) {
       setExtractError(err instanceof Error ? err.message : 'Extraction failed');
@@ -81,8 +82,17 @@ export function RecordIntake({
     setSaving(true);
     setSaveError(null);
     try {
-      // Catch a "## Related" section even when the user never clicked Extract.
-      const merged = { ...fields, related_documents: mergeRelated(fields.related_documents, parseRelatedSection(body)) };
+      // Catch a "## Related" section, and any inline id mention, even when
+      // the user never clicked Extract. Never link a record to itself.
+      const selfId = typeof fields.id === 'string' ? fields.id : undefined;
+      const relatedIds = [...parseRelatedSection(body), ...parseInlineIds(body)].filter((id) => id !== selfId);
+      const vocabulary = await fetchTagVocabulary();
+      const suggestedTags = suggestTags(`${String(fields.title ?? '')} ${body}`, vocabulary);
+      const merged = {
+        ...fields,
+        related_documents: mergeRelated(fields.related_documents, relatedIds),
+        tags: mergeTags(fields.tags, suggestedTags),
+      };
       await onSave(merged, body);
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Failed to save record');

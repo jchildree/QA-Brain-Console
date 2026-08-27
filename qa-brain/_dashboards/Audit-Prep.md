@@ -6,9 +6,9 @@
 
 ```dataview
 TABLE audit_type, status, file.mtime AS "Last Updated"
-FROM "docs/qa-brain/AUDIT"
-WHERE status != "Closed"
-SORT created DESC
+FROM "qa-brain/AUDIT"
+WHERE status != "Obsolete"
+SORT file.ctime DESC
 ```
 
 ---
@@ -16,9 +16,9 @@ SORT created DESC
 ## Findings → CAP Traceability
 
 ```dataview
-TABLE related_records, department, status
-FROM "docs/qa-brain/AUDIT"
-SORT created DESC
+TABLE related_documents, department, status
+FROM "qa-brain/AUDIT"
+SORT file.ctime DESC
 ```
 
 ---
@@ -27,7 +27,7 @@ SORT created DESC
 
 ```dataview
 TABLE type, status, version, file.mtime AS "Modified"
-FROM "docs/qa-brain/SOP" OR "docs/qa-brain/CAP" OR "docs/qa-brain/INCIDENT" OR "docs/qa-brain/CHANGE"
+FROM "qa-brain/SOP" OR "qa-brain/CAP" OR "qa-brain/INCIDENT" OR "qa-brain/CHANGE"
 WHERE file.mtime >= date(today) - dur(30 days)
 SORT file.mtime DESC
 ```
@@ -38,6 +38,7 @@ SORT file.mtime DESC
 
 ```dataview
 TABLE type, version, approved_by, effective_date
+FROM "qa-brain/SOP" OR "qa-brain/CAP" OR "qa-brain/INCIDENT" OR "qa-brain/CHANGE" OR "qa-brain/AUDIT" OR "qa-brain/TRAINING"
 WHERE status = "Approved" AND effective_date >= date(today) - dur(90 days)
 SORT effective_date DESC
 ```
@@ -48,7 +49,7 @@ SORT effective_date DESC
 
 ```dataview
 TABLE status, department, file.mtime AS "Completed"
-FROM "docs/qa-brain/TRAINING"
+FROM "qa-brain/TRAINING"
 WHERE status = "Approved"
 SORT file.mtime DESC
 ```

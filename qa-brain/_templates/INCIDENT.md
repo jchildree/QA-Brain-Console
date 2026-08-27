@@ -3,9 +3,7 @@ id: <% `INC-${tp.date.now("YYYYMMDD")}-001` %>
 type: INCIDENT
 status: Draft
 version: 1.0
-owner: Joseph Childree
-created: <% tp.date.now("YYYY-MM-DD") %>
-modified: <% tp.date.now("YYYY-MM-DD") %>
+owner:
 approved_by: 
 effective_date: 
 review_date: 
@@ -15,7 +13,6 @@ severity:
 root_cause: 
 related_documents: []
 related_records: []
-source: internal
 ---
 
 # <% tp.file.title %>

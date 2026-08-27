@@ -37,7 +37,9 @@ export function RelatedRecordsGraph({ record }: { record: Record<string, unknown
   const centerId = typeof record.id === 'string' ? record.id : 'this record';
   const centerTitle = typeof record.title === 'string' && record.title.trim() ? record.title.trim() : centerId;
   const outgoing = Array.isArray(record.related_documents)
-    ? (record.related_documents as unknown[]).filter((d): d is string => typeof d === 'string' && d.trim() !== '')
+    ? Array.from(new Set(
+        (record.related_documents as unknown[]).filter((d): d is string => typeof d === 'string' && d.trim() !== '')
+      ))
     : [];
 
   const [titles, setTitles] = useState<Record<string, string>>({});
@@ -77,10 +79,12 @@ export function RelatedRecordsGraph({ record }: { record: Record<string, unknown
   const widest = Math.max(incoming.length, outgoing.length, 1);
   const W = widest * COL + 40;
   const cxPos = W / 2;
+  // Only reserve a level for a row that actually has nodes -- no incoming
+  // means the center starts at the top instead of leaving an empty band.
   const topY = 20 + NODE_H / 2;
-  const midY = topY + LEVEL;
+  const midY = incoming.length > 0 ? topY + LEVEL : topY;
   const botY = midY + LEVEL;
-  const H = botY + NODE_H / 2 + 20;
+  const H = (outgoing.length > 0 ? botY : midY) + NODE_H / 2 + 20;
 
   // Lay a set of ids out as a horizontal row, centered on the middle node.
   const row = (ids: string[], y: number) =>

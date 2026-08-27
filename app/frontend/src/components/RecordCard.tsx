@@ -36,12 +36,16 @@ export function RecordCard({
 }) {
   const stamp = stampClass[typeLabel] ?? DEFAULT_STAMP;
   const desc = descriptionFor(type, record);
+  const title = typeof record.title === 'string' && record.title.trim() ? record.title.trim() : record.id;
+  const owner = typeof record.owner === 'string' && record.owner.trim() ? record.owner.trim() : 'Unassigned';
+  const reviewDue = typeof record.review_date === 'string' && record.review_date.trim() ? record.review_date.trim() : '—';
+  const status = typeof record.status === 'string' && record.status.trim() ? record.status.trim() : 'Unknown';
 
   return (
     <Link to={linkTo} className="card">
       <div className="card-head">
-        <span className="card-id">{record.id}</span>
-        <span className={`stamp ${stamp}`}>{record.status}</span>
+        <span className="card-id" title={record.id}>{title}</span>
+        <span className={`stamp ${stamp}`}>{status}</span>
         {onDelete && (
           <button
             type="button"
@@ -57,12 +61,12 @@ export function RecordCard({
           </button>
         )}
       </div>
-      <span className="card-type">{typeLabel}</span>
+      <span className="card-type">{typeLabel} · {record.id}</span>
       {desc && <p className="card-desc">{desc}</p>}
       <div className="card-owner">
-        Owner <b>{record.owner}</b>
+        Owner <b>{owner}</b>
       </div>
-      <div className="card-foot">Review due {record.review_date}</div>
+      <div className="card-foot">Review due {reviewDue}</div>
     </Link>
   );
 }

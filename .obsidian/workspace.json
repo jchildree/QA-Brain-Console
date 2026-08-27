@@ -13,12 +13,12 @@
             "state": {
               "type": "markdown",
               "state": {
-                "file": "docs/QA-Brain-Executive-Summary.md",
+                "file": "docs/superpowers/plans/00-orchestration-index.md",
                 "mode": "source",
                 "source": false
               },
               "icon": "lucide-file",
-              "title": "QA-Brain-Executive-Summary"
+              "title": "00-orchestration-index"
             }
           }
         ]
@@ -83,7 +83,7 @@
       }
     ],
     "direction": "horizontal",
-    "width": 300
+    "width": 549.8332862854004
   },
   "right": {
     "id": "d745fdef5a40eca7",
@@ -176,7 +176,7 @@
             "state": {
               "type": "footnotes",
               "state": {
-                "file": "docs/QA-Brain-Executive-Summary.md"
+                "file": "docs/superpowers/plans/00-orchestration-index.md"
               },
               "icon": "lucide-file-signature",
               "title": "Footnotes"
@@ -202,8 +202,22 @@
       "markdown-importer:Open format converter": false
     }
   },
-  "active": "8c43f2a5ee66cf58",
+  "active": "482c87f17292cadb",
   "lastOpenFiles": [
+    "app/frontend/src/api/relatedRecords.ts.tmp.13552.009ffd049533",
+    "app/frontend/src/pages/SopIntake.test.tsx",
+    "app/frontend/src/components/RecordEditor.test.tsx.tmp.13552.f2994eb2ba56",
+    "app/frontend/src/components/RecordEditor.test.tsx.tmp.13552.afda9cf5d06b",
+    "app/frontend/src/api/relatedRecords.test.ts.tmp.13552.c92421d7ba37",
+    "app/frontend/src/components/RecordEditor.tsx.tmp.13552.7ba4991ee61f",
+    "app/frontend/src/components/RecordEditor.tsx.tmp.13552.bdc9707e7159",
+    "app/frontend/src/pages/SopEditor.test.tsx.tmp.13552.d967593570b3",
+    "app/frontend/src/pages/NoteIntake.test.tsx.tmp.13552.2b929529446c",
+    "app/backend/test/chat.route.test.js",
+    "app/backend/test/chat.route.test.js.tmp.13552.7c77a33e4ee9",
+    "docs/superpowers/plans/2026-08-25-frontend-service-worker-registration-and-push.md",
+    "docs/superpowers/plans/00-orchestration-index.md",
+    "docs/QA-Brain-Executive-Summary.md",
     "qa-brain/Notes/NOTE-20260803-055.md",
     "qa-brain/Notes/NOTE-20260803-054.md",
     "qa-brain/Notes/NOTE-20260803-053.md",
@@ -225,11 +239,6 @@
     "qa-brain/Notes/NOTE-20260803-037.md",
     "qa-brain/Notes/NOTE-20260803-036.md",
     "qa-brain/Notes/NOTE-20260803-035.md",
-    "qa-brain/Notes/NOTE-20260803-034.md",
-    "qa-brain/Notes/NOTE-20260803-033.md",
-    "qa-brain/Notes/NOTE-20260803-032.md",
-    "qa-brain/Notes/NOTE-20260803-031.md",
-    "qa-brain/Notes/NOTE-20260803-030.md",
-    "qa-brain/_meta/Automation-Setup.md.tmp.12516.a12961ceebb0"
+    "qa-brain/Notes/NOTE-20260803-034.md"
   ]
 }
