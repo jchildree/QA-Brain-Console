@@ -187,7 +187,6 @@ export function Overview() {
     (records[type] ?? []).map((r) => ({ record: r, type, urlSlug, label }))
   );
   const draftOrReview = all.filter(({ record }) => record.status === 'Draft' || record.status === 'In Review');
-  const totalCount = all.length;
 
   const recent = [...all]
     .sort((a, b) => (a.record.id < b.record.id ? 1 : -1))

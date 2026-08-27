@@ -312,7 +312,7 @@ describe('RelatedRecordsGraph - fullscreen toggle', () => {
     render(<RelatedRecordsGraph record={makeFakeRecord({ related_documents: ['SOP-1'] })} />);
     await screen.findByRole('img', { name: 'Linked records graph' });
 
-    const panel = document.querySelector('.related-graph-panel') as HTMLElement & { requestFullscreen?: () => void };
+    const panel = document.querySelector('.related-graph-panel') as unknown as { requestFullscreen?: () => void };
     delete panel.requestFullscreen;
 
     expect(() => fireEvent.click(screen.getByLabelText('Toggle fullscreen'))).not.toThrow();
