@@ -1,4 +1,5 @@
 # QA-Brain Console
+<img width="1024" height="1024" alt="qa-brain" src="https://github.com/user-attachments/assets/990904d3-fd5e-4cf4-8b67-903467edbc49" />
 
 A quality-management console for humans who would rather not manage quality in a shared spreadsheet named `CAPA_FINAL_v3_USE_THIS_ONE.xlsx`.
 
