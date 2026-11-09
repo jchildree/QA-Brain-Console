@@ -7,7 +7,7 @@ QA-Brain tracks SOPs, CAPs, Incidents, Changes, Audits, and Training records - w
 
 It also has a Notes area for free-form drafting and general note-taking that doesn't need to be a controlled record - meeting notes, scratch thinking, whatever. Notes cross-link to records the same way records link to each other, and any note can be promoted into a SOP/CAP/Incident/Change/Audit/Training draft in one click, landing you in the same AI-assisted intake every other record type already uses. Notes are not part of the compliance lifecycle below - see "Notes" further down.
 
-**This vault is a drafting and analysis layer, not the system of record.** The real QMS of record is Intellect (EQMS); approved records get pushed there. Nothing in this repo is the final, authoritative documentation of a live quality system - it's where the thinking happens before that.
+**This vault is a drafting and analysis layer, not the system of record.** approved records get pushed to your controlled QMS system. Nothing in this repo is the final, authoritative documentation of a live quality system - it's where the thinking happens before that.
 
 ## What's actually in here
 
